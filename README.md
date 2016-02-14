@@ -2,4 +2,4 @@
 [VanyTang.GitHub.io](http://vanytang.github.io)
 
 # Powered By
-[Hexo](https://hexo.io)
+[Hexo](http://hexo.io)

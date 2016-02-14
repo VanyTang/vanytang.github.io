@@ -1,5 +1,5 @@
 # My Github Pages
-[VanyTang.github.io](vanytang.github.io)
+[VanyTang.GitHub.io](http://vanytang.github.io)
 
 # Support
-[Hexo](hexo.io)
+[Hexo](https://hexo.io)

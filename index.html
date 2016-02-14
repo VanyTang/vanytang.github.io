@@ -57,7 +57,7 @@
         
           <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="搜尋"></a>
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://vanytang.github.io"></form>
@@ -74,6 +74,10 @@
   <time datetime="2016-02-14T10:21:10.000Z" itemprop="datePublished">2016-02-14</time>
 </a>
     
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Functional-Programming/">Functional Programming</a>►<a class="article-category-link" href="/categories/Functional-Programming/Haskell/">Haskell</a>
+  </div>
+
   </div>
   <div class="article-inner">
     
@@ -91,8 +95,9 @@
     <div class="article-entry" itemprop="articleBody">
       
         <p>首先，利用iterate生成Fibonacci的pair序列，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">fibpairlst</span> = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br></pre></td></tr></table></figure></p>
-<p>然后，再用foldr将pair序列展平（flat），<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">foldr</span> (\(x1,x2) xs-&gt;x1:x2:xs) [] fibpairlst</span><br></pre></td></tr></table></figure></p>
-<p>即，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">fiblst</span> = <span class="keyword">let</span> fibpairlst = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br><span class="line">         <span class="keyword">in</span> foldr (\(x1,x2) xs-&gt;x1:x2:xs) [] fibpairlst</span><br></pre></td></tr></table></figure></p>
+<p>运行结果如下，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">*<span class="type">Main</span>&gt; <span class="keyword">let</span> fibpairlst = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br><span class="line">*<span class="type">Main</span>&gt; take <span class="number">10</span> fibpairlst</span><br><span class="line">[(<span class="number">1</span>,<span class="number">1</span>),(<span class="number">2</span>,<span class="number">3</span>),(<span class="number">5</span>,<span class="number">8</span>),(<span class="number">13</span>,<span class="number">21</span>),(<span class="number">34</span>,<span class="number">55</span>),(<span class="number">89</span>,<span class="number">144</span>),(<span class="number">233</span>,<span class="number">377</span>),(<span class="number">610</span>,<span class="number">987</span>),(<span class="number">1597</span>,<span class="number">2584</span>),(<span class="number">4181</span>,<span class="number">6765</span>)]</span><br></pre></td></tr></table></figure></p>
+<p>然后，再用foldr将pair序列展平（flat）即可得到一个斐波那契数列（Fibonacci Sequence）：<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">foldr</span> (\(x1,x2) xs-&gt;x1:x2:xs) [] fibpairlst</span><br></pre></td></tr></table></figure></p>
+<p>综上所述，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">fiblst</span> = <span class="keyword">let</span> fibpairlst = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br><span class="line">         <span class="keyword">in</span> foldr (\(x1,x2) xs-&gt;x1:x2:xs) [] fibpairlst</span><br></pre></td></tr></table></figure></p>
 <p>生成的序列是一个无穷序列，可以用take函数来选出前n个，也可以直接用!!运算符来选出特定的某个。<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">*<span class="type">Main</span>&gt; take <span class="number">20</span> fiblst</span><br><span class="line">[<span class="number">1</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">5</span>,<span class="number">8</span>,<span class="number">13</span>,<span class="number">21</span>,<span class="number">34</span>,<span class="number">55</span>,<span class="number">89</span>,<span class="number">144</span>,<span class="number">233</span>,<span class="number">377</span>,<span class="number">610</span>,<span class="number">987</span>,<span class="number">1597</span>,<span class="number">2584</span>,<span class="number">4181</span>,<span class="number">6765</span>]</span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">20</span></span><br><span class="line"><span class="number">10946</span></span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">5</span></span><br><span class="line"><span class="number">8</span></span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">3</span></span><br><span class="line"><span class="number">3</span></span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">1</span></span><br><span class="line"><span class="number">1</span></span><br></pre></td></tr></table></figure></p>
 <p>我想这可能是最快的<strong>递推</strong>生成的斐波那契数列的方法了吧，由于Haskell的惰性求值机制，当用到某个值时直接递推计算，没有产生任何中间冗余的结果，也没有重复运算。</p>
 
@@ -102,7 +107,7 @@
       <a data-url="http://vanytang.github.io/2016/02/14/Haskell-Fibonacci-sequence/" data-id="cikmepmhq0000i0sqo4xypczd" class="article-share-link">Share</a>
       
       
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Haskell-Fibonacci/">Haskell, Fibonacci</a></li></ul>
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Haskell/">Haskell</a></li></ul>
 
     </footer>
   </div>
@@ -162,13 +167,10 @@
           <aside id="sidebar">
   
     
-
-  
-    
   <div class="widget-wrap">
-    <h3 class="widget-title">標籤</h3>
+    <h3 class="widget-title">分类</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell-Fibonacci/">Haskell, Fibonacci</a></li></ul>
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Functional-Programming/">Functional Programming</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Functional-Programming/Haskell/">Haskell</a></li></ul></li></ul>
     </div>
   </div>
 
@@ -176,18 +178,28 @@
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">標籤雲</h3>
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Haskell-Fibonacci/" style="font-size: 10px;">Haskell, Fibonacci</a>
+      <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a>
     </div>
   </div>
 
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">彙整</h3>
+    <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">February 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
     </div>
   </div>
 

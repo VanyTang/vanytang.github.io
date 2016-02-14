@@ -1,5 +1,5 @@
 # My Home Page
-[VanyTang.GitHub.io](vanytang.github.io)
+[VanyTang.GitHub.io](http://vanytang.github.io)
 
 # Powered By
-[Hexo](hexo.io)
+[Hexo](https://hexo.io)

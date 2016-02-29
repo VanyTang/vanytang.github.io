@@ -3,17 +3,21 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Journey Record</title>
+  <title>Ambari自动化离线批量部署Hadoop平台总结 | Journey Record</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="Code nest of Vany">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Journey Record">
-<meta property="og:url" content="http://vanytang.github.io/index.html">
+  <meta name="description" content="面临的问题有了Ambari的平台，理论上来说，其实应该很方便的就可以部署Hadoop平台，但是实际上对于一个集群来说，并没有那么简单。现在，我们是有一堆机器（手动配置非常麻烦），如何将这堆机器利用Ambari快速的搭建成Hadoop平台是我们现在面临的问题。
+Client的预配置：对于每台机器，要做很多预先的配置，例如关闭防火墙,更新、安装软件等。另外，为了实现多个机器之间的无密码访问，我们要设置">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ambari自动化离线批量部署Hadoop平台总结">
+<meta property="og:url" content="http://vanytang.github.io/2016/02/29/Ambari-Hadoop-Offline/index.html">
 <meta property="og:site_name" content="Journey Record">
-<meta property="og:description" content="Code nest of Vany">
+<meta property="og:description" content="面临的问题有了Ambari的平台，理论上来说，其实应该很方便的就可以部署Hadoop平台，但是实际上对于一个集群来说，并没有那么简单。现在，我们是有一堆机器（手动配置非常麻烦），如何将这堆机器利用Ambari快速的搭建成Hadoop平台是我们现在面临的问题。
+Client的预配置：对于每台机器，要做很多预先的配置，例如关闭防火墙,更新、安装软件等。另外，为了实现多个机器之间的无密码访问，我们要设置">
+<meta property="og:updated_time" content="2016-02-29T13:43:26.642Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Journey Record">
-<meta name="twitter:description" content="Code nest of Vany">
+<meta name="twitter:title" content="Ambari自动化离线批量部署Hadoop平台总结">
+<meta name="twitter:description" content="面临的问题有了Ambari的平台，理论上来说，其实应该很方便的就可以部署Hadoop平台，但是实际上对于一个集群来说，并没有那么简单。现在，我们是有一堆机器（手动配置非常麻烦），如何将这堆机器利用Ambari快速的搭建成Hadoop平台是我们现在面临的问题。
+Client的预配置：对于每台机器，要做很多预先的配置，例如关闭防火墙,更新、安装软件等。另外，为了实现多个机器之间的无密码访问，我们要设置">
   
     <link rel="alternate" href="/atom.xml" title="Journey Record" type="application/atom+xml">
   
@@ -66,9 +70,7 @@
   </div>
 </header>
       <div class="outer">
-        <section id="main">
-  
-    <article id="post-Ambari-Hadoop-Offline" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-Ambari-Hadoop-Offline" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2016/02/29/Ambari-Hadoop-Offline/" class="article-date">
   <time datetime="2016-02-29T12:59:39.000Z" itemprop="datePublished">2016-02-29</time>
@@ -85,8 +87,8 @@
       <header class="article-header">
         
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/29/Ambari-Hadoop-Offline/">Ambari自动化离线批量部署Hadoop平台总结</a>
+    <h1 class="article-title" itemprop="name">
+      Ambari自动化离线批量部署Hadoop平台总结
     </h1>
   
 
@@ -193,58 +195,19 @@ echo $variable
     </footer>
   </div>
   
-</article>
-
-
+    
+<nav id="article-nav">
   
-    <article id="post-Haskell-Fibonacci-sequence" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2016/02/14/Haskell-Fibonacci-sequence/" class="article-date">
-  <time datetime="2016-02-14T10:21:10.000Z" itemprop="datePublished">2016-02-14</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Functional-Programming/">Functional Programming</a>►<a class="article-category-link" href="/categories/Functional-Programming/Haskell/">Haskell</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
   
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/02/14/Haskell-Fibonacci-sequence/">Fibonacci sequence in Haskell</a>
-    </h1>
+    <a href="/2016/02/14/Haskell-Fibonacci-sequence/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Fibonacci sequence in Haskell</div>
+    </a>
   
+</nav>
 
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>首先，利用iterate生成Fibonacci的pair序列，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">fibpairlst</span> = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br></pre></td></tr></table></figure></p>
-<p>运行结果如下，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">*<span class="type">Main</span>&gt; <span class="keyword">let</span> fibpairlst = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br><span class="line">*<span class="type">Main</span>&gt; take <span class="number">10</span> fibpairlst</span><br><span class="line">[(<span class="number">1</span>,<span class="number">1</span>),(<span class="number">2</span>,<span class="number">3</span>),(<span class="number">5</span>,<span class="number">8</span>),(<span class="number">13</span>,<span class="number">21</span>),(<span class="number">34</span>,<span class="number">55</span>),(<span class="number">89</span>,<span class="number">144</span>),(<span class="number">233</span>,<span class="number">377</span>),(<span class="number">610</span>,<span class="number">987</span>),(<span class="number">1597</span>,<span class="number">2584</span>),(<span class="number">4181</span>,<span class="number">6765</span>)]</span><br></pre></td></tr></table></figure></p>
-<p>然后，再用foldr将pair序列展平（flat）即可得到一个斐波那契数列（Fibonacci Sequence）：<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">foldr</span> (\(x1,x2) xs-&gt;x1:x2:xs) [] fibpairlst</span><br></pre></td></tr></table></figure></p>
-<p>综上所述，<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">fiblst</span> = <span class="keyword">let</span> fibpairlst = iterate (\(x1,x2)-&gt;(x1+x2,x1+<span class="number">2</span>*x2)) (<span class="number">1</span>,<span class="number">1</span>)</span><br><span class="line">         <span class="keyword">in</span> foldr (\(x1,x2) xs-&gt;x1:x2:xs) [] fibpairlst</span><br></pre></td></tr></table></figure></p>
-<p>生成的序列是一个无穷序列，可以用take函数来选出前n个，也可以直接用!!运算符来选出特定的某个。<br><figure class="highlight haskell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">*<span class="type">Main</span>&gt; take <span class="number">20</span> fiblst</span><br><span class="line">[<span class="number">1</span>,<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">5</span>,<span class="number">8</span>,<span class="number">13</span>,<span class="number">21</span>,<span class="number">34</span>,<span class="number">55</span>,<span class="number">89</span>,<span class="number">144</span>,<span class="number">233</span>,<span class="number">377</span>,<span class="number">610</span>,<span class="number">987</span>,<span class="number">1597</span>,<span class="number">2584</span>,<span class="number">4181</span>,<span class="number">6765</span>]</span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">20</span></span><br><span class="line"><span class="number">10946</span></span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">5</span></span><br><span class="line"><span class="number">8</span></span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">3</span></span><br><span class="line"><span class="number">3</span></span><br><span class="line">*<span class="type">Main</span>&gt; fiblst !! <span class="number">1</span></span><br><span class="line"><span class="number">1</span></span><br></pre></td></tr></table></figure></p>
-<p>我想这可能是最快的<strong>递推</strong>生成的斐波那契数列的方法了吧，由于Haskell的惰性求值机制，当用到某个值时直接递推计算，没有产生任何中间冗余的结果，也没有重复运算。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://vanytang.github.io/2016/02/14/Haskell-Fibonacci-sequence/" data-id="cil81fy5l0009j0sqtxbr1e2z" class="article-share-link">Share</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Haskell/">Haskell</a></li></ul>
-
-    </footer>
-  </div>
   
 </article>
-
-
-  
 
 </section>
         

@@ -68,6 +68,393 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-CentOS-Ambari-5-Spark" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-5-Spark/" class="article-date">
+  <time datetime="2016-03-26T14:20:39.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/26/CentOS-Ambari-5-Spark/">CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Jupyter"><a href="#Jupyter" class="headerlink" title="Jupyter"></a>Jupyter</h2><p>启动Jupyter(内核是pyspark)的方法(这个应该是local本机模式)：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&#34;notebook&#34; pyspark</span><br></pre></td></tr></table></figure></p>
+<p>加上一些其他的配置：</p>
+<ul>
+<li>设置Python版本为Python3</li>
+<li>ip为0.0.0.0:7777（这样别的机器也可以通过7777访问）</li>
+<li>设置为YARN-client模式(利用集群资源)</li>
+<li>executor个数为7，每个executor的CPU核心数为8</li>
+<li>PYTHONHASHSEED为0 (否则会出错)</li>
+</ul>
+<p>最后的我一般用的命令是：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/bash&#10;PYTHONHASHSEED=0 PYSPARK_PYTHON=python3 PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&#34;notebook --ip=0.0.0.0 --port=7777&#34; pyspark --master=yarn-client --num-executors=7 --executor-cores=8</span><br></pre></td></tr></table></figure></p>
+<p>在Jupyter中，建立一个Python3的notebook，等待Kernel启动完成，即可开始使用。</p>
+<p>另外，在notebook中，他是自动建立SparkContext变量sc的，可以直接使用。例如利用投针法计算Pi的近似值：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Spark Pi</span></span><br><span class="line"><span class="keyword">from</span> random <span class="keyword">import</span> random</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sample</span><span class="params">(_)</span>:</span></span><br><span class="line">    x, y = random(), random()</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> <span class="keyword">if</span> x**<span class="number">2</span>+y**<span class="number">2</span>&lt;=<span class="number">1</span> <span class="keyword">else</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line">n_samples = <span class="number">10</span>**<span class="number">8</span></span><br><span class="line">print(sc.parallelize(range(n_samples)).map(sample).sum()*<span class="number">4.0</span>/n_samples)</span><br></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="spark-submit提交任务"><a href="#spark-submit提交任务" class="headerlink" title="spark-submit提交任务"></a>spark-submit提交任务</h2><p>Jupyter-notebook可以用作我们平常交互式测试时使用，但是如果要运行一些任务，时间很长，想看看执行的进度，或者还有很多其他附属的文件需要一起执行，内存占用之类的还需要个性配置，那么用spark-submit命令提交任务最好。</p>
+<p>利用python运行main.py，提交任务，设置其依赖的文件a.py,b.py,c.py(因为每个executor是单独运行的，因此其依赖文件也要指定好，然后传输到各个executor上去)以及运行环境（YARN-Client, 7个Executor，每个8个CPU核心），写法如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PYSPARK_PYTHON=python3 spark-submit --master=yarn-client --num-executors=7 --executor-cores=8 --files a.py,b.py,c.py main.py</span><br></pre></td></tr></table></figure></p>
+<p>在这种情况下，我们的main.py中就要手动建立SparkContext也即sc变量了：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from pyspark import SparkContext, SparkConf, StorageLevel&#10;&#10;conf = SparkConf()&#10;        .setMaster(&#34;yarn-client&#34;)&#10;        .setAppName(&#34;Spark-App&#34;)&#10;        .set(&#34;spark.storage.memoryFraction&#34;, &#34;0.9&#34;)&#10;sc = SparkContext(conf=conf, pyFiles=[&#39;a.py&#39;, &#39;b.py&#39;, &#39;c.py&#39;])</span><br></pre></td></tr></table></figure></p>
+<p>还可以传参数设置内存：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PYSPARK_PYTHON=python3 spark-submit --master=yarn-client --num-executors=7 --executor-cores=6 --driver-memory=2g --executor-memory=10g --files bikeUtil.py,weatherHoliday.py,stationFlow.py,predictor.py main.py</span><br></pre></td></tr></table></figure></p>
+<h3 id="SparkContext-SparkConf"><a href="#SparkContext-SparkConf" class="headerlink" title="SparkContext, SparkConf"></a>SparkContext, SparkConf</h3><p>在SparkConf, SparkContext这里，我们也可以通过传递参数pyFiles来设置依赖的文件，通过SparkConf的set函数来设置一些参数。<br>据说SparkContext.addFile(…)可以提交依赖的文件（还未测试）</p>
+<p>详情请见官方文档： <a href="https://spark.apache.org/docs/latest/configuration.html" target="_blank" rel="external">https://spark.apache.org/docs/latest/configuration.html</a></p>
+<hr>
+<h2 id="Parallelize"><a href="#Parallelize" class="headerlink" title="Parallelize"></a>Parallelize</h2><p>在利用Python编写并行化程序时该如何思考呢？先讲一些程序结构。</p>
+<p>实际上Spark的架构是分为Driver和Worker的，Driver负责执行总程序（额……意会意会），负责调用Spark的对象来并行化执行，从而Spark架构帮助我们将要执行的任务传输到各个worker上执行，最后再汇总回来。</p>
+<p>因此，其实我们用Python编写程序，不涉及到sc相关的变量时，其实我们就是在跑Python程序，调用sc产生的rdd的map，reduceByKey，collect时会调用相关的Spark架构去并行化执行。</p>
+<p>sc.parallelize是并行化的起点（当然还有其他函数，例如textFile)：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rdd = sc.parallelize(...)</span><br></pre></td></tr></table></figure></p>
+<p>创造一个rdd，rdd可以transformation，但并不会真正执行，只有在action执行时才会，即lazy-evaluation，具体这里就不展开了。</p>
+<p>关于他具体是如何并行化的呢？根据原理有两种方法，一种是基于Hash的Partitioner，一种是Ranger，HashPartitioner相当于一个Hash函数，将key转化到对应的Partition分区的编号。RangePartitioner的原理还有待探究。</p>
+<hr>
+<h2 id="数据的来源"><a href="#数据的来源" class="headerlink" title="数据的来源"></a>数据的来源</h2><p>我们可以用<code>sc.textFile(..)</code>来读取相关文本文件，默认是从HDFS读取的，不需要写前面的<code>hdfs://...</code>；</p>
+<p>另外，我们也可以通过本机读取，但文件名需要这样写：<code>file:///...</code>。但是本机读取需要注意的一点是，由于worker是分布式执行的，因此本机读取的文件需要放在各个分布式的机器上，推荐可以在Driver端读取完，然后broadcast到各个worker。</p>
+<hr>
+<h2 id="闭包与Broadcast"><a href="#闭包与Broadcast" class="headerlink" title="闭包与Broadcast"></a>闭包与Broadcast</h2><p>一般在__main__里面声明的变量，会自动打包并传送到worker中，在worker的代码中会访问的到。但是如果是在函数中建立的，需要用global实现。</p>
+<p>但是如果可以的话最好用broadcast将变量广播出去，这样就不用每次task把信息重新传输一遍了。</p>
+<p>共享变量broadcast <a href="http://blog.csdn.net/slvher/article/details/46439019" target="_blank" rel="external">^SparkBroadcast</a></p>
+<blockquote>
+<p>Q: 如何在传给spark transformations操作的函数中访问共享变量？<br>A: 根据官网Programming Guide文档说明（参见这里），当作为参数传给spark操作（如map或reduce）的函数在远程机器的节点上执行时，函数中使用到的每个变量的副本（separate copies）也会被拷贝到这些节点上以便函数访问，如果这些变量在节点上被修改，那这些修改不会被反传回spark driver program，即在实现业务代码时，应由实现者保证这些变量的只读特性。因为在不同任务间维护通用的、支持读/写的共享变量会降低spark效率。<br>举个例子，下面的代码说明了如何在传给spark操作的函数中借助全局变量实现共享访问：</p>
+<p>Q: 除通过global variable共享变量外，spark还支持什么方式共享变量？<br>A: Spark还支持broadcast变量和accumulators这两种共享变量的方式。其中，broadcast允许开发者在spark集群的每个节点上保持变量的一份只读cache，本质上，broadcast变量也是global变量，只不过它是由开发者显式分发到集群节点上的，而非spark根据每个task调用的函数对变量的访问情况自动拷贝。至于accumulators，顾名思义，它只支持add操作，具体语法可参考spark programming guide关于accumulators部分的说明。</p>
+<p>Q: broadcast变量与普通global变量有何关系？各自的适用场合？<br>A: 实际上，broadcast变量是一种global变量，它们均可以实现在分布式节点中执行函数时共享变量。其中，普通global变量是随着spark对task的调度根据实际情况由spark调度器负责拷贝至集群节点的，这意味着若有需访问某global变量的多个task执行时，每个task的执行均有变量拷贝过程；而broadcast变量则是由开发者主动拷贝至集群节点且会一直cache直至用户主动调用unpersist或整个spark作业结束。<br>PS: 实际上，即使调用unpersist也不会立即释放资源，它只是告诉spark调度器资源可以释放，至于何时真正释放由spark调度器决定，参见SPARK-4030。<br>结论：若共享变量只会被某个task使用1次，则使用普通global变量共享方式即可；若共享变量会被先后执行的多个tasks访问，则broadcast方式会节省拷贝开销。<br>再次提醒：若使用了broadcast方式共享变量，则开发者应在确定该变量不再需要共享时主动调用unpersist来释放集群资源。</p>
+</blockquote>
+<p>Broadcast的机理详见：<a href="https://github.com/JerryLead/SparkInternals/blob/master/markdown/7-Broadcast.md" target="_blank" rel="external">https://github.com/JerryLead/SparkInternals/blob/master/markdown/7-Broadcast.md</a></p>
+<hr>
+<h2 id="编码范式的改变"><a href="#编码范式的改变" class="headerlink" title="编码范式的改变"></a>编码范式的改变</h2><ol>
+<li>采用函数式编程方式，数据只有不断的转化（transform），不可更改；当我们要某些值时，使用action获取它。</li>
+<li>尽可能并行化，不要产生过大的全局变量（即闭包传过去东西不要太多）</li>
+<li>注意！只能在driver进行并行化, worker不行</li>
+<li>不要传输（过大）的对象（即这些序列中的元素不要是对象）</li>
+</ol>
+<hr>
+<h2 id="Multiple-SparkContext"><a href="#Multiple-SparkContext" class="headerlink" title="Multiple SparkContext"></a>Multiple SparkContext</h2><p>一台机器只能启动一个Spark?否则会Address冲突，如何解决多人同时使用的问题？<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">16/03/21 06:38:23 WARN AbstractLifeCycle: FAILED SelectChannelConnector@0.0.0.0:4040: java.net.BindException: Address already in use</span><br></pre></td></tr></table></figure></p>
+<p>貌似可以重新注册一个ip，可以同时跑，关键是内存不够……</p>
+<hr>
+<h2 id="Lost-Executor-内存不够"><a href="#Lost-Executor-内存不够" class="headerlink" title="Lost Executor (内存不够)"></a>Lost Executor (内存不够)</h2><p>如果Executor注册上了，但是执行时，又断掉了(<code>ERROR YarnScheduler: Lost executor xxx</code>)，那很可能是由于内存不够的原因。</p>
+<p>在执行的时候设置driver-memory, executor-memory， 试着调整Spark配置中spark.yarn.driver.memoryOverhead, executor.memoryOverhead的大小<a href="http://apache-spark-user-list.1001560.n3.nabble.com/Executor-Lost-Failure-td18486.html" target="_blank" rel="external">^SparkMemory1</a> <a href="http://stackoverflow.com/questions/33074288/getting-error-in-spark-executor-lost" target="_blank" rel="external">^SparkMemory3</a>，memoryOverhead一般用处不太大。</p>
+<p>下面是摘自网上性能调优Blog的一段话 <a href="http://www.csdn.net/article/2015-07-08/2825160" target="_blank" rel="external">^SparkPerformanceTurning</a>：</p>
+<blockquote>
+<p>在YARN模式下：</p>
+<ol>
+<li><p>集群task并行度：SPARK_ EXECUTOR_INSTANCES* SPARK_EXECUTOR_CORES；</p>
+</li>
+<li><p>集群内存总量：(executor个数) * (SPARK_EXECUTOR_MEMORY+ spark.yarn.executor.memoryOverhead)+(SPARK_DRIVER_MEMORY+spark.yarn.driver.memoryOverhead)。</p>
+</li>
+</ol>
+<p>重点强调：Spark对Executor和Driver额外添加堆内存大小，Executor端：由spark.yarn.executor.memoryOverhead设置，默认值executorMemory <em> 0.07与384的最大值。Driver端：由spark.yarn.driver.memoryOverhead设置，默认值driverMemory </em> 0.07与384的最大值。</p>
+<p>通过调整上述参数，可以提高集群并行度，让系统同时执行的任务更多，那么对于相同的任务，并行度高了，可以减少轮询次数。举例说明：如果一个stage有100task，并行度为50，那么执行完这次任务，需要轮询两次才能完成，如果并行度为100，那么一次就可以了。</p>
+<p>但是在资源相同的情况，并行度高了，相应的Executor内存就会减少，所以需要根据实际实况协调内存和core。此外，Spark能够非常有效的支持短时间任务（例如：200ms），因为会对所有的任务复用JVM，这样能减小任务启动的消耗，Standalone模式下，core可以允许1-2倍于物理core的数量进行超配。</p>
+</blockquote>
+<ul>
+<li>executor_memory是整个executor的内存（包括多个core）, core多了，那么需要的内存就多，如果超过executor的内存，就会崩；因此内存和CPU的利用是一个tradeoff</li>
+<li>可以用<code>rdd.cache()</code>然后看一下内存变化，就知道这次数据集所占的空间了。</li>
+<li>尽量不要让对象拷贝，即使你认为是引用，也有可能是拷贝（占多份内存），可以改成先collect再broadcast的方式</li>
+</ul>
+<p>性能调优详见：<a href="http://www.raychase.net/3546" target="_blank" rel="external">http://www.raychase.net/3546</a></p>
+<p>另外，有一个参数最好需要设置一下，默认是0.6，表示我们给executor设置的memory中只有60%的资源是分配给运行时的内存，其余的分配给RDD.cache()时的空间。一般如果cache不是很大的话，那么放宽这个比例可以赢得更大的内存，以运行更多的cores：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conf = SparkConf().set(&#34;spark.storage.memoryFraction&#34;, &#34;0.9&#34;)</span><br></pre></td></tr></table></figure></p>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/319633" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/319633</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-5-Spark/" data-id="cim98te8u000iw4sqeg6ao7b1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Jupyter/">Jupyter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CentOS-Ambari-4-Problem" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-4-Problem/" class="article-date">
+  <time datetime="2016-03-26T14:19:53.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/26/CentOS-Ambari-4-Problem/">CentOS7上Hadoop集群搭建与使用小记（四）——难题集坑</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这里汇集一些部署、使用过程中的一些问题。</p>
+<h2 id="Ambari-Metric监视不到-CPU-内存等显示不了"><a href="#Ambari-Metric监视不到-CPU-内存等显示不了" class="headerlink" title="Ambari Metric监视不到 (CPU,内存等显示不了)"></a>Ambari Metric监视不到 (CPU,内存等显示不了)</h2><p>很有可能是时间不匹配<br>除了时间，时区也要匹配<br>最好能配置NTP，使得整体同步</p>
+<h2 id="yum被占用"><a href="#yum被占用" class="headerlink" title="yum被占用"></a>yum被占用</h2><p>自动安装过程中可能会出现yum被占用的情况，执行：<br><code>kill xxx</code><br>杀死被占用的进程<br>其中xxx为占用yum的进程号</p>
+<h2 id="HDFS权限问题"><a href="#HDFS权限问题" class="headerlink" title="HDFS权限问题"></a>HDFS权限问题</h2><p>由于权限问题，启动PySpark可能启动不起来（写权限错误）</p>
+<p>两个原则：</p>
+<ul>
+<li>hdfs是HDFS的super Administrator</li>
+<li>谁建立的文件夹就是谁的</li>
+</ul>
+<p>解决方案：</p>
+<ul>
+<li>先在hdfs下<code>hadoop fs -chmod 777 /user/</code>设置权限</li>
+<li>以你想要的帐户登录</li>
+<li>再在对应的账户下<code>hadoop fs -mkdir /user/xxx/</code></li>
+<li>这样建立的文件夹就是你的了</li>
+</ul>
+<h2 id="PYTHONHASHSEED相关的问题"><a href="#PYTHONHASHSEED相关的问题" class="headerlink" title="PYTHONHASHSEED相关的问题"></a>PYTHONHASHSEED相关的问题</h2><p>在启动Spark前添加：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> SPARK_YARN_USER_ENV=PYTHONHASHSEED=<span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/318262" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/318262</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-4-Problem/" data-id="cim98te92000rw4sqc1mmii8k" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CentOS-Ambari-3-Deploy" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-3-Deploy/" class="article-date">
+  <time datetime="2016-03-26T14:18:43.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/26/CentOS-Ambari-3-Deploy/">CentOS7上Hadoop集群搭建与使用小记（三）——部署过程</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="预备工作"><a href="#预备工作" class="headerlink" title="预备工作"></a>预备工作</h2><p>首先要按照（一）——预备工作中写的设置好要设置的东西。</p>
+<p>接下来安装expect软件： <code>yum install expect -y</code></p>
+<p>再下载script.zip文件包，在yumsource机器下解压，目录如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@yumsource script]# tree&#10;.&#10;&#9500;&#9472;&#9472; addnewhost.sh&#10;&#9500;&#9472;&#9472; applyall.sh&#10;&#9500;&#9472;&#9472; configmaster.sh&#10;&#9500;&#9472;&#9472; hostlist&#10;&#9474;   &#9492;&#9472;&#9472; hostlist_new&#10;&#9500;&#9472;&#9472; init.sh&#10;&#9500;&#9472;&#9472; others&#10;&#9474;   &#9500;&#9472;&#9472; ambari.repo&#10;&#9474;   &#9500;&#9472;&#9472; configclient_template.sh&#10;&#9474;   &#9500;&#9472;&#9472; deployclient.sh&#10;&#9474;   &#9500;&#9472;&#9472; deployfiles.sh&#10;&#9474;   &#9500;&#9472;&#9472; deploypubkeys.sh&#10;&#9474;   &#9500;&#9472;&#9472; deploypythons.sh&#10;&#9474;   &#9500;&#9472;&#9472; disSELinuxCfg&#10;&#9474;   &#9500;&#9472;&#9472; hosts_template&#10;&#9474;   &#9500;&#9472;&#9472; installmaster.sh&#10;&#9474;   &#9500;&#9472;&#9472; installpython34.sh&#10;&#9474;   &#9500;&#9472;&#9472; removefiles.sh&#10;&#9474;   &#9492;&#9472;&#9472; updatepython2.sh&#10;&#9500;&#9472;&#9472; remoterunall.sh&#10;&#9492;&#9472;&#9472; tf</span><br></pre></td></tr></table></figure></p>
+<p>设置好host列表（存在script文件夹的hostlist/hostlist_new文件下），例如：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10.15.198.204 master.hadoopcluster&#10;10.15.198.205 slave1.hadoopcluster&#10;10.15.198.206 slave2.hadoopcluster&#10;10.15.198.207 slave3.hadoopcluster&#10;10.15.198.208 slave4.hadoopcluster&#10;10.15.198.200 slave5.hadoopcluster&#10;10.15.198.202 slave6.hadoopcluster</span><br></pre></td></tr></table></figure></p>
+<p>最后需要特别说明的是，在script/others夹下有一个host_template文件，这里需要在最后手动加入yumsource的域名和ip地址，例如：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4&#10;::1         localhost localhost.localdomain localhost6 localhost6.localdomain6&#10;10.15.198.214 yumsource.hadoop</span><br></pre></td></tr></table></figure></p>
+<h2 id="部署全新环境"><a href="#部署全新环境" class="headerlink" title="部署全新环境"></a>部署全新环境</h2><p>在script目录下执行命令： <code>./init.sh hostlist/hostlist_new</code> 即可。</p>
+<p>如果在这个过程中发现：</p>
+<ol>
+<li>yum程序被卡死，需要手动切到对应的机器，kill到占用的进程</li>
+<li>一些地方配置错误，导致整个程序不正常退出，那么再次运行本脚本即可</li>
+</ol>
+<h2 id="部署Python3-amp-Packages"><a href="#部署Python3-amp-Packages" class="headerlink" title="部署Python3 &amp; Packages"></a>部署Python3 &amp; Packages</h2><p>在Spark中我需要集群跑Python3，因此每个机器都要安装Python3以及numpy, scipy, matplotlib等packages. </p>
+<p>首先是Python3，下载官方的Python3源码，并且修改一些编译配置（很抱歉我忘了……出错上网搜就知道了），这样为了后面安装Python的package不出错。</p>
+<p>然后安装一些必备的软件：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># for complier &amp; python3 installation</span></span><br><span class="line">yum install epel-release -y</span><br><span class="line">yum install gcc-c++ -y</span><br><span class="line"><span class="comment"># for numpy or scipy or jupyter</span></span><br><span class="line">yum install zlib-devel -y</span><br><span class="line">yum install python34-devel -y</span><br><span class="line">yum install blas-devel -y</span><br><span class="line">yum install lapack-devel -y</span><br><span class="line"><span class="comment"># for easy_install-3.4</span></span><br><span class="line">yum install python34-setuptools -y</span><br><span class="line"><span class="comment"># for matplotlib</span></span><br><span class="line">yum install freetype-devel -y</span><br><span class="line">yum install libpng-devel -y</span><br></pre></td></tr></table></figure></p>
+<p>接着在Python3的目录下，执行下面语句，Python就安装好了。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./configure --enable-shared&#10;make clean&#10;make&#10;make install</span><br></pre></td></tr></table></figure></p>
+<p>下载好pip-8.1.0.tar.gz，接着安装pip3（利用之前安装好的python34-setuptools中的easy_install-3.4）<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">easy_install-3.4 pip-8.1.0.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>最后进入装有packages的文件夹，运行：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip3 install --no-index --find-links=./ numpy&#10;pip3 install --no-index --find-links=./ scipy&#10;pip3 install --no-index --find-links=./ pandas&#10;pip3 install --no-index --find-links=./ matplotlib</span><br></pre></td></tr></table></figure></p>
+<p>附：要安装对应的安装包是在别的有网的机器上下载下来的（<strong>注意：环境要一样，例如都是Linux-CentOS64位，且都是Python3的pip</strong>），将numpy下载到当前目录下的命令如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip3 install --download ./ xxxpackage</span><br></pre></td></tr></table></figure></p>
+<p>以上过程我写成了一个脚本<code>installPythonRelated.sh</code>，虽然可以调用remoterunall.sh，但是由于安装过程过于漫长（而脚本是一个个机器顺序执行的），所以推荐利用applyall.sh写一个脚本（例如deployfiles.sh）将安装包分发的各个机器上，再手动在各个机器启动，同时并行安装。</p>
+<h2 id="部署Jupyter"><a href="#部署Jupyter" class="headerlink" title="部署Jupyter"></a>部署Jupyter</h2><p>如果安装了本文最开始的那些插件，那么Jupyter的安装方法也和部署numpy等安装包一样了：先下载下来相关的安装包，然后在对应的机器用pip3进行安装即可。</p>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/318186" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/318186</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-3-Deploy/" data-id="cim98te96000uw4sqjb9ulmyv" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Bash/">Bash</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shell/">Shell</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CentOS-Ambari-2-Script" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-2-Script/" class="article-date">
+  <time datetime="2016-03-26T14:16:59.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Hadoop/">Hadoop</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/26/CentOS-Ambari-2-Script/">CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这一部分主要介绍的是思想以及原理，如果要具体操作步骤，可以直接跳过看下一部分（三）.</p>
+<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>抽象看来，集群的部署操作基本只有两种类型操作：</p>
+<ul>
+<li>在Server上执行脚本，对每个机器产生作用，例如集体分发一些文件这种，我称之为apply</li>
+<li>Server端调用Client，相当于每个Client执行脚本，例如在Client上安装软件这类的，这种操作我称之为Remote-Run.</li>
+</ul>
+<h2 id="基本脚本"><a href="#基本脚本" class="headerlink" title="基本脚本"></a>基本脚本</h2><p>根据基本思想小节中提到的两种操作，我用两个脚本来抽象这两种操作，一个是applyall.sh，一个是remoterunall.sh。</p>
+<h3 id="传送文件tf-transfer-file"><a href="#传送文件tf-transfer-file" class="headerlink" title="传送文件tf (transfer file)"></a>传送文件tf (transfer file)</h3><p>在正式介绍applyall和remoterunall之前，我先介绍一个基本功能，tf，即传送文件的功能。传送文件在部署过程中是非常常见的一个需求，因此我们将其抽象出来作为一个单独的“命令”。</p>
+<p>因为传送文件的前提是目标目录存在，因此每次传送文件前需要先<code>mkdir xxx</code>一下以确保文件夹存在，再传送文件。</p>
+<p>但在传送过程中很有可能需要密码或者输入<code>yes</code>以保存对方的fingerprint，因此这里采用了expect程序来做交互式处理，如果没有的话需要安装一下：<code>yum install expect</code>。</p>
+<p>具体实现的代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect&#10;&#10;set source   [lindex $argv 0]&#10;set dest     [lindex $argv 1]&#10;set destfile [lindex $argv 2]&#10;set serverip [lindex $argv 3]&#10;set pwd      [lindex $argv 4]&#10;&#10;spawn ssh root@$serverip &#34;mkdir $dest&#34;&#10;expect &#123;&#10;&#34;*continue connecting*&#34; &#123; send &#34;yes\r&#34;; exp_continue &#125;&#10;&#34;*password*&#34; &#123; send &#34;$pwd\r&#34;; exp_continue &#125;&#10;&#34;#&#34; &#123; send &#34;\r&#34; &#125;&#10;&#125;&#10;&#10;spawn scp -r $source root@$serverip:$dest$destfile&#10;expect &#123;&#10;&#34;*continue connecting*&#34; &#123; send &#34;yes\r&#34;; exp_continue &#125;&#10;&#34;*password*&#34; &#123; send &#34;$pwd\r&#34;; exp_continue &#125;&#10;&#34;#&#34; &#123; send &#34;\r&#34; &#125;&#10;&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Apply-All"><a href="#Apply-All" class="headerlink" title="Apply-All"></a>Apply-All</h3><p>先来说说applyall.sh. 调用脚本，传入hostlist（格式同hosts文件），以及要执行的bashfile，就会帮你依次执行，例如我想将本地的hosts文件传送到各个其他机器，则用法如下:<br><code>./applyall.sh hostlist deployhosts.sh mypassword</code><br>其中hostlist是预先定好的hosts列表（见上一个文章文末），deployhosts.sh内容如下（该脚本必须按照ip，name，pwd的顺序来取对应的参数）：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span></span><br><span class="line">hostip=<span class="variable">$1</span></span><br><span class="line">hostname=<span class="variable">$2</span></span><br><span class="line"><span class="built_in">pwd</span>=<span class="variable">$3</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===Sending hosts to client <span class="variable">$1</span>, <span class="variable">$2</span>..."</span></span><br><span class="line">./tf hosts /etc/ hosts <span class="variable">$hostip</span> <span class="variable">$pwd</span></span><br></pre></td></tr></table></figure></p>
+<p>这里的tf即上文提到的传送文件的tf。</p>
+<p>applyall.sh的脚本如下所示，如果参数中没有传送pwd参数，那么会询问用户手动输入。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span><br><span class="line"></span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">2</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error call format"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Format: ./applyall.sh hostlist bashfile [pwd]"</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">hostlist=<span class="variable">$1</span></span><br><span class="line">bashfile=<span class="variable">$2</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">3</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">read</span> -p <span class="string">"Enter the client password:"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">        <span class="built_in">pwd</span>=<span class="variable">$3</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> ===Enter Apply-All  hostlist: <span class="variable">$hostlist</span>, bashfile: <span class="variable">$bashfile</span></span><br><span class="line"></span><br><span class="line">cat <span class="variable">$hostlist</span> | <span class="keyword">while</span> <span class="built_in">read</span> hostInfo</span><br><span class="line"><span class="keyword">do</span> </span><br><span class="line">        hostip=`<span class="built_in">echo</span> <span class="variable">$hostInfo</span> | cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>1`</span><br><span class="line">        hostname=`<span class="built_in">echo</span> <span class="variable">$hostInfo</span> | cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>2`</span><br><span class="line">        <span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===Applying Client <span class="variable">$hostip</span> <span class="variable">$hostname</span>..."</span></span><br><span class="line">        bash <span class="variable">$bashfile</span> <span class="variable">$hostip</span> <span class="variable">$hostname</span> <span class="variable">$pwd</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===Leave Apply-All."</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="Remote-Run-All"><a href="#Remote-Run-All" class="headerlink" title="Remote-Run-All"></a>Remote-Run-All</h3><p>remoterunall.sh，顾名思义，就是远程执行脚本的意思。假设我想每台机器更新python，那么我只要写一个小脚本updatepython2.sh在同一个目录下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update python -y</span><br></pre></td></tr></table></figure></p>
+<p>然后运行<code>remoterunall.sh hostlist updatepython2.sh</code>即可。</p>
+<p>remoterunall.sh的实现如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/bash&#10;&#10;if [ $# -lt 2 ]; then&#10;        echo &#34;Error call format&#34;&#10;        echo &#34;Format: ./remoterunall.sh hostlist bashfile&#34;&#10;        exit&#10;fi&#10;&#10;hostlist=$1&#10;bashfile=$2&#10;&#10;echo&#10;echo ===Enter Remote-RunAll  hostlist: $hostlist, bashfile: $bashfile&#10;&#10;cat $hostlist | while read hostInfo&#10;do&#10;        hostip=`echo $hostInfo | cut -d &#34; &#34; -f1`&#10;        hostname=`echo $hostInfo | cut -d &#34; &#34; -f2`&#10;&#10;        echo -e &#34;\n===Run script in client $hostip $hostname...&#34;&#10;        ssh root@$hostip &#39;bash -s&#39; &#60; $bashfile&#10;done&#10;&#10;echo -e &#34;\n===Leave Remote-RunAll.&#34;</span><br></pre></td></tr></table></figure></p>
+<p>这里假设执行remoterunall.sh的时候，所有机器之间的ssh-key已经配置好了，可以无密码访问，因此这里并没有需要密码。</p>
+<h2 id="部署脚本"><a href="#部署脚本" class="headerlink" title="部署脚本"></a>部署脚本</h2><p>接下来的脚本基本是建立在上面的“基本脚本”的基础上的，这里只介绍三个主要脚本：</p>
+<ol>
+<li>init.sh 负责初始化一个集群</li>
+<li>configmaster.sh 负责配置master节点 （主要是配置Ambari相关）</li>
+<li>addnewhost.sh 负责当集群汇总新加入一个节点时，配置新机器以及重新分发hosts等文件</li>
+</ol>
+<h3 id="init-sh"><a href="#init-sh" class="headerlink" title="init.sh"></a>init.sh</h3><p>使用方法： ./init.sh hostlist<br>其中hostlist是一个以hosts格式存着主机名和ip的文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span><br><span class="line"></span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">1</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: parameter is not enough..."</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Format: ./init.sh hostlist"</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">hostlist=<span class="variable">$1</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter the client password(all should be same):"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># generate sever ssh-key</span></span><br><span class="line">filepath=~/.ssh/id_rsa</span><br><span class="line"><span class="keyword">if</span> [ <span class="operator">-f</span> <span class="variable">$filepath</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"ssh-key already exists. it won't be generated again."</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"if you want to generate new key, please remove the key file first."</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"===ssh key generating..."</span></span><br><span class="line">        ssh-keygen <span class="operator">-f</span> ~/.ssh/id_rsa -P <span class="string">""</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> </span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Clearing public key gathering folder..."</span></span><br><span class="line">rm <span class="operator">-f</span> ~/.ssh/pub/*</span><br><span class="line"><span class="built_in">echo</span> </span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Copy this public key to that folder..."</span></span><br><span class="line">cp  ~/.ssh/id_rsa.pub ~/.ssh/pub/id_rsa.pub</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Generating hosts file...."</span></span><br><span class="line">cat ./others/hosts_template <span class="variable">$hostlist</span> &gt; hosts</span><br><span class="line"></span><br><span class="line"><span class="comment"># Deploying Clients...</span></span><br><span class="line">./applyall.sh <span class="variable">$hostlist</span> others/deployclient.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Gathering pub keys..."</span></span><br><span class="line">cat ~/.ssh/pub/*.pub &gt; authorized_keys</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Deploying pub keys..."</span></span><br><span class="line">./applyall.sh <span class="variable">$hostlist</span> others/deploypubkeys.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Cleaning..."</span></span><br><span class="line">rm <span class="operator">-f</span> hosts</span><br><span class="line">rm <span class="operator">-f</span> authorized_keys</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Clean finished."</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Reboot all the machine..."</span></span><br><span class="line">cat <span class="variable">$hostlist</span> | <span class="keyword">while</span> <span class="built_in">read</span> hostinfo</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">        hostip=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>1`</span><br><span class="line">        hostname=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>2`</span><br><span class="line">        ssh root@<span class="variable">$hostip</span> <span class="string">'reboot'</span> &lt; /dev/null</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reboot finished."</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="configmaster-sh"><a href="#configmaster-sh" class="headerlink" title="configmaster.sh"></a>configmaster.sh</h3><p>这里调用configmaster.sh，然后输入主机ip及其密码，即可自动配置ambari的repo地址，并且安装ambari，拷贝现有的jdk到master节点上(Amabri配置时使用)。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter your master ip:"</span> masterip</span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter your password:"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$masterip</span>, <span class="variable">$pwd</span></span><br><span class="line">./tf others/ambari.repo /etc/yum.repos.d/ ambari.repo <span class="variable">$masterip</span> <span class="variable">$pwd</span></span><br><span class="line">ssh root@<span class="variable">$masterip</span> <span class="string">'bash -s'</span> &lt; others/installmaster.sh</span><br><span class="line">./tf ../jdk/jdk-<span class="number">8</span>u60-linux-x64.tar.gz /var/lib/ambari-server/resources/ jdk-<span class="number">8</span>u60-linux-x64.tar.gz <span class="variable">$masterip</span> <span class="variable">$jdk</span></span><br><span class="line">./tf ../jdk/jce_policy-<span class="number">8</span>.zip /var/lib/ambari-server/resources/ jce_policy-<span class="number">8</span>.zip <span class="variable">$masterip</span> <span class="variable">$jdk</span></span><br></pre></td></tr></table></figure></p>
+<p>这调用了installmaster.sh，其实就是执行了三句话（即安装ambari）：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum clean all</span><br><span class="line">yum repolist</span><br><span class="line">yum install ambari-server -y</span><br></pre></td></tr></table></figure></p>
+<p>注意调用完该脚本仅仅是安装好了Ambari，接下来还需要到master节点上运行以下命令以配置、启动Amabri：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ambari-server setup</span><br><span class="line">ambari-server start</span><br></pre></td></tr></table></figure></p>
+<h3 id="addnewhost-sh"><a href="#addnewhost-sh" class="headerlink" title="addnewhost.sh"></a>addnewhost.sh</h3><p>这个用法和init.sh类似，但是要注意传入一个新的hostlist，一个旧的hostlist。注意：程序并不会自动合并两个hostlist（为了避免任务失败，还需要重新建立hostist）。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span></span><br><span class="line">newhostlist=<span class="variable">$1</span></span><br><span class="line">orighostlist=<span class="variable">$2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">2</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: parameter is not enough..."</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Format: ./addnew.sh newhostlist orignhostlist"</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Enter addnew scirpt: <span class="variable">$newhostlist</span> <span class="variable">$orighostlist</span>"</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter the client password(all should be same):"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Generating new hosts file...."</span></span><br><span class="line">updatedhostlist=<span class="string">"updatedhostlist"</span></span><br><span class="line">cat <span class="variable">$orighostlist</span> &gt; <span class="variable">$updatedhostlist</span></span><br><span class="line">cat <span class="variable">$newhostlist</span> &gt;&gt; <span class="variable">$updatedhostlist</span></span><br><span class="line">cat ./others/hosts_template <span class="variable">$updatedhostlist</span> &gt; hosts</span><br><span class="line"></span><br><span class="line"><span class="comment"># Deploying new clients...</span></span><br><span class="line">./applyall.sh <span class="variable">$newhostlist</span> others/deployclient.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> </span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reDeploying hosts file..."</span></span><br><span class="line">./applyall.sh <span class="variable">$updatedhostlist</span> others/deployhosts.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===gathering pub keys..."</span></span><br><span class="line">cat ~/.ssh/pub/*.pub &gt; authorized_keys</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===reDeploying pub keys for all clients..."</span></span><br><span class="line">./applyall.sh <span class="variable">$updatedhostlist</span> others/deploypubkeys.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Cleaning..."</span></span><br><span class="line">rm <span class="operator">-f</span> hosts</span><br><span class="line">rm <span class="operator">-f</span> <span class="variable">$updatedhostlist</span></span><br><span class="line">rm <span class="operator">-f</span> authorized_keys</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Clean finished."</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reboot all the new machine..."</span></span><br><span class="line">cat <span class="variable">$newhostlist</span> | <span class="keyword">while</span> <span class="built_in">read</span> hostinfo</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">        hostip=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>1`</span><br><span class="line">        hostname=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>2`</span><br><span class="line">        ssh root@<span class="variable">$hostip</span> <span class="string">'reboot'</span> &lt; /dev/null</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reboot finished."</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Leave addnew scirpt."</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h2><p>其他的一些部署过程用到的脚本这里就不一一放上来了，整个脚本目录如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@yumsource script]# tree&#10;.&#10;&#9500;&#9472;&#9472; addnewhost.sh&#10;&#9500;&#9472;&#9472; applyall.sh&#10;&#9500;&#9472;&#9472; configmaster.sh&#10;&#9500;&#9472;&#9472; hostlist&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; hostlist_new&#10;&#9500;&#9472;&#9472; init.sh&#10;&#9500;&#9472;&#9472; others&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; ambari.repo&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; configclient_template.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; deployclient.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; deploypubkeys.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; deploypythons.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; disSELinuxCfg&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; hosts_template&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; installmaster.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; installpython34.sh&#10;&#9474;&#160;&#160; &#9492;&#9472;&#9472; updatepython2.sh&#10;&#9500;&#9472;&#9472; remoterunall.sh&#10;&#9492;&#9472;&#9472; tf</span><br></pre></td></tr></table></figure>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/318071" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/318071</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-2-Script/" data-id="cim98te9g0013w4sqpid9axdq" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Bash/">Bash</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shell/">Shell</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-CentOS-Ambari-1-Prepare" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-1-Prepare/" class="article-date">
+  <time datetime="2016-03-26T14:14:21.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Hadoop/">Hadoop</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/03/26/CentOS-Ambari-1-Prepare/">CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="CentOS7上Hadoop集群搭建与使用小记（一）——预备工作"><a href="#CentOS7上Hadoop集群搭建与使用小记（一）——预备工作" class="headerlink" title="CentOS7上Hadoop集群搭建与使用小记（一）——预备工作"></a>CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</h1><p>tags: Hadoop CentOS</p>
+<hr>
+<p>最近折腾了一圈Hadoop的平台，利用Ambari（简直好用）在实体机上搭建了整个Hadoop集群（在虚拟机上也一样），踩过很多坑，总结了很多经验，在这里一步步记录下来，作为一个总结，也可以给别人作为一个参考。</p>
+<p>整个系列将会包括从最开始的裸机的部署，到后面的Ambari, Hadoop软件的安装，以及Hadoop生态圈软件的原理与使用。本教程所采用的操作系统是基于CentOS7，在实体机上搭建的。不过在虚拟机上搭建也不是问题，注意设置好网络就好。操作系统如果不一样的话，可能系统配置以及安装对应的软件包的命令会有所差别。</p>
+<h2 id="机器准备"><a href="#机器准备" class="headerlink" title="机器准备"></a>机器准备</h2><h3 id="架构介绍"><a href="#架构介绍" class="headerlink" title="架构介绍"></a>架构介绍</h3><p>在需要部署的集群的机器以外，我们还需要一台机器，作为配置过程的Server，在预备工作中，所有的操作都是在这台机器上操作。如果是实体机集群的话，可以单独拿出一台来做Server，如果是单机Hadoop平台的话，可以直接建一个Server的虚拟机即可。架构图如下：<br><img src="http://static.zybuluo.com/Vany/ovccz1oal1687lruksqwdc3u/%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%9E%B6%E6%9E%84%E5%9B%BE.png" alt="服务器架构图.png-58.5kB"></p>
+<p>最上面的主机我们后文都称作Server，下面的都称作Client。</p>
+<h3 id="机器安装"><a href="#机器安装" class="headerlink" title="机器安装"></a>机器安装</h3><p>安装部分其实比较简单，但是有几个坑需要注意一下：</p>
+<ol>
+<li><p>安装CentOS7选语言的时候，最好选择英文版，否则后面Ambari注册机器时死活注册不上（不要问我是怎么发现这个原因的，说多了都是泪，猜测要不是时区问题要不就是语言问题，反正选这个就好使了）</p>
+</li>
+<li><p>需要选择安装模式时，选<strong>GNOME Desktop</strong>模式就好，对大多数人都方便使用。如果选最小版的话，ifconfig命令等工具包还得自己安装，略麻烦。<strong>注意：在右面的附件组件中，最好把Development Tools等附加插件都装上</strong>，因为后面安装scipy等等python的packages时需要编译器，否则还要自己安装gcc,g++等C/C++编译器。</p>
+</li>
+</ol>
+<h3 id="网络部署"><a href="#网络部署" class="headerlink" title="网络部署"></a>网络部署</h3><p>安装好后，集群的机器要设置好IP, GATEWAY (网关), DNS，以确保各个机器之间可以互联，集群与Server之间也可以相连，而且最好是可以上网，因为之后需要使用yum命令安装、更新一些软件。</p>
+<p>设置网络的地方：<code>/etc/sysconfig/network-scripts/ifcfg-xxx</code>，其中xxx是你的网卡名称，一般可能是enoXXXX或，emXXXXX或，eth0等等，具体我就不细说了。当然也可以在安装的过程中设置，另外注意确保配置文件中（即ifcfg-xxx）的ONBOOT的选项是yes，即网卡自动启动，这样远程重启我们也不怕啦。</p>
+<hr>
+<h2 id="Server的配置"><a href="#Server的配置" class="headerlink" title="Server的配置"></a>Server的配置</h2><p>这里的Server指的是上文的架构图中的yumsource.hadoop。</p>
+<p>虽然机器名字叫yumsource.hadoop，但是其实我并没有配置CentOS的source（在我的环境下，可以直接采用<code>yum install xxx</code>来安装那些需要的<strong>小</strong>软件），而是配置了Ambari、HDP(相当于Hadoop)的source。因为如果下载Ambari的话在墙内简直是龟速，有时还会莫名其妙的断线，配置好后 ，看着50MB/s的传输速度，简直爽。</p>
+<h3 id="下载离线安装包"><a href="#下载离线安装包" class="headerlink" title="下载离线安装包"></a>下载离线安装包</h3><p>首先我们下载Ambari, HDP, JDK等我们需要的软件包：</p>
+<p>先到hortonworks上找到<a href="http://docs.hortonworks.com/index.html" target="_blank" rel="external">最新的文档</a>，比如最新的Ambari的是2.2.1.1，选择<code>Amabri 2.2</code>-&gt;<code>Install &amp; Upgrade</code>-&gt;<code>Automated Install with Ambari</code>-&gt;<code>Using a Local Repository</code>项，里面有个<code>Obtain the Repositories</code>，就可以看到Ambari和HDP Stack的Repository的地址了，两个页面如下：</p>
+<ul>
+<li>Ambari: <a href="http://docs.hortonworks.com/HDPDocuments/Ambari-2.2.1.1/bk_Installing_HDP_AMB/content/_ambari_repositories.html" target="_blank" rel="external">http://docs.hortonworks.com/HDPDocuments/Ambari-2.2.1.1/bk_Installing_HDP_AMB/content/_ambari_repositories.html</a></li>
+<li>HDP: <a href="http://docs.hortonworks.com/HDPDocuments/Ambari-2.2.1.1/bk_Installing_HDP_AMB/content/_hdp_23_repositories.html" target="_blank" rel="external">http://docs.hortonworks.com/HDPDocuments/Ambari-2.2.1.1/bk_Installing_HDP_AMB/content/_hdp_23_repositories.html</a></li>
+</ul>
+<p>找到对应系统的Tarball版本的地址，将其下载下来。CentOS7对应的Ambari和HDP2.3的版本的Tarball地址如下：</p>
+<ul>
+<li>Ambari: <a href="http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.1.1/ambari-2.2.1.1-centos7.tar.gz" target="_blank" rel="external">http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.1.1/ambari-2.2.1.1-centos7.tar.gz</a></li>
+<li>HDP Stack: <a href="http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.3.4.7/HDP-2.3.4.7-centos7-rpm.tar.gz" target="_blank" rel="external">http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.3.4.7/HDP-2.3.4.7-centos7-rpm.tar.gz</a></li>
+<li>HDP-UTILS: <a href="http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.20/repos/centos7/HDP-UTILS-1.1.0.20-centos7.tar.gz" target="_blank" rel="external">http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.20/repos/centos7/HDP-UTILS-1.1.0.20-centos7.tar.gz</a></li>
+</ul>
+<h3 id="配置本地Repo"><a href="#配置本地Repo" class="headerlink" title="配置本地Repo"></a>配置本地Repo</h3><p>建立<code>/var/www/html/hdp/</code>文件夹，将我们下载的安装包传到Server上。看看能不能通过http直接访问该机的目录，假设该机的域名是yumsource.hadoop，那么可以在浏览器里输入</p>
+<p><code>http://yumsource.hadoop/hdp/</code></p>
+<p>看看能不能访问到。如果不能的话，可以安装（更新）下httpd试试。如果能访问到，那么就配置成功了。</p>
+<p>接下来配置一下repo的文件，也就是说别人想用<code>yum install ambari-server</code>安装时，他要知道从哪里去下。建立ambari.repo，内容如下（这些内容根据你的具体地址和版本号改变而改变）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[Ambari-2.2.0.0]&#10;name=Ambari-2.2.0.0&#10;baseurl=http://yumsource.hadoop/hdp/ambari-2.2.0.0/centos7/2.2.0.0-1310/&#10;gpgcheck=0&#10;enabled=1&#10;&#10;[HDP-2.3.4.0]&#10;name=HDP-2.3.4.0&#10;baseurl=http://yumsource.hadoop/hdp/HDP/centos7/2.x/updates/2.3.4.0/&#10;gpgcheck=0&#10;enabled=1&#10;&#10;[HDP-UTILS-1.1.0.20]&#10;name=HDP-UTILS-1.1.0.20&#10;baseurl=http://yumsource.hadoop/hdp/HDP-UTILS-1.1.0.20/repos/centos7/&#10;gpgcheck=0&#10;enabled=1</span><br></pre></td></tr></table></figure>
+<p>这个文件要传送到master节点（是指集群的master）的<code>/etc/yum.repos.d/</code>目录下，这里我们先不传送，后面用脚本统一配置。</p>
+<h3 id="建立hosts列表"><a href="#建立hosts列表" class="headerlink" title="建立hosts列表"></a>建立hosts列表</h3><p>将我们集群的所有机器(不包括这个Server)配置成一个hosts列表，供后面的脚本使用，例如：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">10.15.198.204 master.hadoopcluster&#10;10.15.198.205 slave1.hadoopcluster&#10;10.15.198.206 slave2.hadoopcluster&#10;10.15.198.207 slave3.hadoopcluster&#10;10.15.198.208 slave4.hadoopcluster</span><br></pre></td></tr></table></figure></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>到这里，我们的预备工作基本做完了，目前搭建好了互联的机器集群，和具有Ambari、HDP安装包的Server，以及一个hosts列表。</p>
+<p>接下来，我会介绍部署所用的脚本，以及部署的过程。</p>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/318013" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/318013</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-1-Prepare/" data-id="cim98te9n001cw4sqygnh7ori" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-Ambari-Hadoop-Offline" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2016/02/29/Ambari-Hadoop-Offline/" class="article-date">
@@ -102,7 +489,7 @@
 <hr>
 <h2 id="集群配置"><a href="#集群配置" class="headerlink" title="集群配置"></a>集群配置</h2><p>根据上面的问题，我们提出自己搭建yum source源，并利用脚本自动化部署的方法。</p>
 <p>一共有3类机器，一台作为yumsource，一台作为master，其余的作为slaves.</p>
-<p>配置如下<br>|机器|FQDN(域名)|描述|<br>|-|-|<br>|yum源|yumsource.hadoop|部署HDP、HDP-util、Ambari的源|<br>|master|master.hadoop|作为hadoop的master机器，安装ambari-server|<br>|N台slave|slaveX.hadoop|作为hadoop的slave机器，会自动安装ambari-agent|</p>
+<p>配置如下<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">|&#26426;&#22120;|FQDN(&#22495;&#21517;)|&#25551;&#36848;|&#10;|-|-|&#10;|yum&#28304;|yumsource.hadoop|&#37096;&#32626;HDP&#12289;HDP-util&#12289;Ambari&#30340;&#28304;|&#10;|master|master.hadoop|&#20316;&#20026;hadoop&#30340;master&#26426;&#22120;&#65292;&#23433;&#35013;ambari-server|&#10;|N&#21488;slave|slaveX.hadoop|&#20316;&#20026;hadoop&#30340;slave&#26426;&#22120;&#65292;&#20250;&#33258;&#21160;&#23433;&#35013;ambari-agent|</span><br></pre></td></tr></table></figure></p>
 <p>这里每台机器2核CPU，4G内存(这个要大一些，使用过1G结果卡死了，服务多的机器8G最好)，50-100GB硬盘，系统采用CentOS7完全版</p>
 <hr>
 <h2 id="用到的技术"><a href="#用到的技术" class="headerlink" title="用到的技术"></a>用到的技术</h2><ul>
@@ -168,7 +555,7 @@
 <p>然后将各个安装包解压放在/var/www/html下的hdp文件夹（自己建一个hdp文件夹），然后利用httpd（没有的话自己安装一下）把html整个目录对外开放。如果在另一台机器访问这台机器的域名，能看到整个目录以及文件信息，那么就说明ok了。</p>
 <h3 id="Ambari安装与配置"><a href="#Ambari安装与配置" class="headerlink" title="Ambari安装与配置"></a>Ambari安装与配置</h3><p>在安装之前，我们还需要告诉yum去哪里下载我们的ambari，建立一个ambari.repo并放在/etc/yum.repos.d/下面，内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[Ambari-<span class="number">2.2</span>.<span class="number">0.0</span>]</span><br><span class="line">name=Ambari-<span class="number">2.2</span>.<span class="number">0.0</span></span><br><span class="line">baseurl=http://yumsource.hadoop/hdp/ambari-<span class="number">2.2</span>.<span class="number">0.0</span>/centos7/<span class="number">2.2</span>.<span class="number">0.0</span>-<span class="number">1310</span>/</span><br><span class="line">gpgcheck=<span class="number">0</span></span><br><span class="line">enabled=<span class="number">1</span></span><br><span class="line"></span><br><span class="line">[HDP-<span class="number">2.3</span>.<span class="number">4.0</span>]</span><br><span class="line">name=HDP-<span class="number">2.3</span>.<span class="number">4.0</span></span><br><span class="line">baseurl=http://yumsource.hadoop/hdp/HDP/centos7/<span class="number">2</span>.x/updates/<span class="number">2.3</span>.<span class="number">4.0</span>/</span><br><span class="line">gpgcheck=<span class="number">0</span></span><br><span class="line">enabled=<span class="number">1</span></span><br><span class="line"></span><br><span class="line">[HDP-UTILS-<span class="number">1.1</span>.<span class="number">0.20</span>]</span><br><span class="line">name=HDP-UTILS-<span class="number">1.1</span>.<span class="number">0.20</span></span><br><span class="line">baseurl=http://yumsource.hadoop/hdp/HDP-UTILS-<span class="number">1.1</span>.<span class="number">0.20</span>/repos/centos7/</span><br><span class="line">gpgcheck=<span class="number">0</span></span><br><span class="line">enabled=<span class="number">1</span></span><br></pre></td></tr></table></figure></p>
 <p>配置好后， 调用<code>yum install -y ambari-server</code>即可开始安装ambari及其附属组件。<br>安装好后，调用<code>ambari-server setup</code>即可开始设置ambari，在这个过程中需要下载JDK，<br>我们可以提前下好JDK，然后放在对应的目录下：/var/lib/ambari-server/resources/，这样可以节约很多时间.</p>
-<p>安装成功后，执行<code>ambari-server start</code>即可启动，接着就在浏览器中查看master这台机器的8000端口即可访问配置页面，按照提示一步步做就好。</p>
+<p>安装成功后，执行<code>ambari-server start</code>即可启动，接着就在浏览器中查看master这台机器的8080端口即可访问配置页面，按照提示一步步做就好。</p>
 <h3 id="节点重启怎么办"><a href="#节点重启怎么办" class="headerlink" title="节点重启怎么办"></a>节点重启怎么办</h3><p>主节点调用<code>ambari-server restart</code><br>子节点调用<code>ambari-agent restart</code><br>剩下的具体Hadoop服务，直接在网页端就可以配置了</p>
 <hr>
 <h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><h3 id="expect"><a href="#expect" class="headerlink" title="expect"></a>expect</h3><p>expect是一个解释器，可以处理交互式输入，例如：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spawn scp authorized_keys root@$serverip:~/.ssh/authorized_keys&#10;expect &#123;&#10;&#34;*continue connecting*&#34; &#123; send &#34;yes\r&#34;; exp_continue &#125;&#10;&#34;*password*&#34; &#123; send &#34;$pwd\r&#34;; exp_continue &#125;&#10;&#34;#&#34; &#123; send &#34;\r&#34; &#125;&#10;&#125;</span><br></pre></td></tr></table></figure></p>
@@ -185,7 +572,7 @@ echo $variable
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://vanytang.github.io/2016/02/29/Ambari-Hadoop-Offline/" data-id="cil81fy5t000ij0sqxua1ox74" class="article-share-link">Share</a>
+      <a data-url="http://vanytang.github.io/2016/02/29/Ambari-Hadoop-Offline/" data-id="cim98tea5001gw4sq78jlrcn1" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li></ul>
@@ -233,7 +620,7 @@ echo $variable
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://vanytang.github.io/2016/02/14/Haskell-Fibonacci-sequence/" data-id="cil81fy5l0009j0sqtxbr1e2z" class="article-share-link">Share</a>
+      <a data-url="http://vanytang.github.io/2016/02/14/Haskell-Fibonacci-sequence/" data-id="cim98te8n0009w4sqc6wf68he" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Haskell/">Haskell</a></li></ul>
@@ -264,7 +651,7 @@ echo $variable
   <div class="widget-wrap">
     <h3 class="widget-title">标签</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jupyter/">Jupyter</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
     </div>
   </div>
 
@@ -274,7 +661,7 @@ echo $variable
   <div class="widget-wrap">
     <h3 class="widget-title">标签云</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Ambari/" style="font-size: 10px;">Ambari</a> <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Hadoop/" style="font-size: 10px;">Hadoop</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a>
+      <a href="/tags/Ambari/" style="font-size: 13.33px;">Ambari</a> <a href="/tags/Bash/" style="font-size: 13.33px;">Bash</a> <a href="/tags/CentOS/" style="font-size: 16.67px;">CentOS</a> <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Hadoop/" style="font-size: 20px;">Hadoop</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a> <a href="/tags/Jupyter/" style="font-size: 10px;">Jupyter</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Shell/" style="font-size: 13.33px;">Shell</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a>
     </div>
   </div>
 
@@ -283,7 +670,7 @@ echo $variable
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">三月 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
     </div>
   </div>
 
@@ -296,11 +683,23 @@ echo $variable
       <ul>
         
           <li>
-            <a href="/2016/02/29/Ambari-Hadoop-Offline/">Ambari自动化离线批量部署Hadoop平台总结</a>
+            <a href="/2016/03/26/CentOS-Ambari-5-Spark/">CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用</a>
           </li>
         
           <li>
-            <a href="/2016/02/14/Haskell-Fibonacci-sequence/">Fibonacci sequence in Haskell</a>
+            <a href="/2016/03/26/CentOS-Ambari-4-Problem/">CentOS7上Hadoop集群搭建与使用小记（四）——难题集坑</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-3-Deploy/">CentOS7上Hadoop集群搭建与使用小记（三）——部署过程</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-2-Script/">CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-1-Prepare/">CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</a>
           </li>
         
       </ul>

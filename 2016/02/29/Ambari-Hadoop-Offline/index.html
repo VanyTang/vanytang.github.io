@@ -13,7 +13,7 @@ Client的预配置：对于每台机器，要做很多预先的配置，例如�
 <meta property="og:site_name" content="Journey Record">
 <meta property="og:description" content="面临的问题有了Ambari的平台，理论上来说，其实应该很方便的就可以部署Hadoop平台，但是实际上对于一个集群来说，并没有那么简单。现在，我们是有一堆机器（手动配置非常麻烦），如何将这堆机器利用Ambari快速的搭建成Hadoop平台是我们现在面临的问题。
 Client的预配置：对于每台机器，要做很多预先的配置，例如关闭防火墙,更新、安装软件等。另外，为了实现多个机器之间的无密码访问，我们要设置">
-<meta property="og:updated_time" content="2016-02-29T13:43:26.642Z">
+<meta property="og:updated_time" content="2016-02-29T14:13:00.113Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Ambari自动化离线批量部署Hadoop平台总结">
 <meta name="twitter:description" content="面临的问题有了Ambari的平台，理论上来说，其实应该很方便的就可以部署Hadoop平台，但是实际上对于一个集群来说，并没有那么简单。现在，我们是有一堆机器（手动配置非常麻烦），如何将这堆机器利用Ambari快速的搭建成Hadoop平台是我们现在面临的问题。
@@ -104,7 +104,7 @@ Client的预配置：对于每台机器，要做很多预先的配置，例如�
 <hr>
 <h2 id="集群配置"><a href="#集群配置" class="headerlink" title="集群配置"></a>集群配置</h2><p>根据上面的问题，我们提出自己搭建yum source源，并利用脚本自动化部署的方法。</p>
 <p>一共有3类机器，一台作为yumsource，一台作为master，其余的作为slaves.</p>
-<p>配置如下<br>|机器|FQDN(域名)|描述|<br>|-|-|<br>|yum源|yumsource.hadoop|部署HDP、HDP-util、Ambari的源|<br>|master|master.hadoop|作为hadoop的master机器，安装ambari-server|<br>|N台slave|slaveX.hadoop|作为hadoop的slave机器，会自动安装ambari-agent|</p>
+<p>配置如下<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">|&#26426;&#22120;|FQDN(&#22495;&#21517;)|&#25551;&#36848;|&#10;|-|-|&#10;|yum&#28304;|yumsource.hadoop|&#37096;&#32626;HDP&#12289;HDP-util&#12289;Ambari&#30340;&#28304;|&#10;|master|master.hadoop|&#20316;&#20026;hadoop&#30340;master&#26426;&#22120;&#65292;&#23433;&#35013;ambari-server|&#10;|N&#21488;slave|slaveX.hadoop|&#20316;&#20026;hadoop&#30340;slave&#26426;&#22120;&#65292;&#20250;&#33258;&#21160;&#23433;&#35013;ambari-agent|</span><br></pre></td></tr></table></figure></p>
 <p>这里每台机器2核CPU，4G内存(这个要大一些，使用过1G结果卡死了，服务多的机器8G最好)，50-100GB硬盘，系统采用CentOS7完全版</p>
 <hr>
 <h2 id="用到的技术"><a href="#用到的技术" class="headerlink" title="用到的技术"></a>用到的技术</h2><ul>
@@ -170,7 +170,7 @@ Client的预配置：对于每台机器，要做很多预先的配置，例如�
 <p>然后将各个安装包解压放在/var/www/html下的hdp文件夹（自己建一个hdp文件夹），然后利用httpd（没有的话自己安装一下）把html整个目录对外开放。如果在另一台机器访问这台机器的域名，能看到整个目录以及文件信息，那么就说明ok了。</p>
 <h3 id="Ambari安装与配置"><a href="#Ambari安装与配置" class="headerlink" title="Ambari安装与配置"></a>Ambari安装与配置</h3><p>在安装之前，我们还需要告诉yum去哪里下载我们的ambari，建立一个ambari.repo并放在/etc/yum.repos.d/下面，内容如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[Ambari-<span class="number">2.2</span>.<span class="number">0.0</span>]</span><br><span class="line">name=Ambari-<span class="number">2.2</span>.<span class="number">0.0</span></span><br><span class="line">baseurl=http://yumsource.hadoop/hdp/ambari-<span class="number">2.2</span>.<span class="number">0.0</span>/centos7/<span class="number">2.2</span>.<span class="number">0.0</span>-<span class="number">1310</span>/</span><br><span class="line">gpgcheck=<span class="number">0</span></span><br><span class="line">enabled=<span class="number">1</span></span><br><span class="line"></span><br><span class="line">[HDP-<span class="number">2.3</span>.<span class="number">4.0</span>]</span><br><span class="line">name=HDP-<span class="number">2.3</span>.<span class="number">4.0</span></span><br><span class="line">baseurl=http://yumsource.hadoop/hdp/HDP/centos7/<span class="number">2</span>.x/updates/<span class="number">2.3</span>.<span class="number">4.0</span>/</span><br><span class="line">gpgcheck=<span class="number">0</span></span><br><span class="line">enabled=<span class="number">1</span></span><br><span class="line"></span><br><span class="line">[HDP-UTILS-<span class="number">1.1</span>.<span class="number">0.20</span>]</span><br><span class="line">name=HDP-UTILS-<span class="number">1.1</span>.<span class="number">0.20</span></span><br><span class="line">baseurl=http://yumsource.hadoop/hdp/HDP-UTILS-<span class="number">1.1</span>.<span class="number">0.20</span>/repos/centos7/</span><br><span class="line">gpgcheck=<span class="number">0</span></span><br><span class="line">enabled=<span class="number">1</span></span><br></pre></td></tr></table></figure></p>
 <p>配置好后， 调用<code>yum install -y ambari-server</code>即可开始安装ambari及其附属组件。<br>安装好后，调用<code>ambari-server setup</code>即可开始设置ambari，在这个过程中需要下载JDK，<br>我们可以提前下好JDK，然后放在对应的目录下：/var/lib/ambari-server/resources/，这样可以节约很多时间.</p>
-<p>安装成功后，执行<code>ambari-server start</code>即可启动，接着就在浏览器中查看master这台机器的8000端口即可访问配置页面，按照提示一步步做就好。</p>
+<p>安装成功后，执行<code>ambari-server start</code>即可启动，接着就在浏览器中查看master这台机器的8080端口即可访问配置页面，按照提示一步步做就好。</p>
 <h3 id="节点重启怎么办"><a href="#节点重启怎么办" class="headerlink" title="节点重启怎么办"></a>节点重启怎么办</h3><p>主节点调用<code>ambari-server restart</code><br>子节点调用<code>ambari-agent restart</code><br>剩下的具体Hadoop服务，直接在网页端就可以配置了</p>
 <hr>
 <h2 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h2><h3 id="expect"><a href="#expect" class="headerlink" title="expect"></a>expect</h3><p>expect是一个解释器，可以处理交互式输入，例如：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spawn scp authorized_keys root@$serverip:~/.ssh/authorized_keys&#10;expect &#123;&#10;&#34;*continue connecting*&#34; &#123; send &#34;yes\r&#34;; exp_continue &#125;&#10;&#34;*password*&#34; &#123; send &#34;$pwd\r&#34;; exp_continue &#125;&#10;&#34;#&#34; &#123; send &#34;\r&#34; &#125;&#10;&#125;</span><br></pre></td></tr></table></figure></p>
@@ -187,7 +187,7 @@ echo $variable
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://vanytang.github.io/2016/02/29/Ambari-Hadoop-Offline/" data-id="cil81fy5t000ij0sqxua1ox74" class="article-share-link">Share</a>
+      <a data-url="http://vanytang.github.io/2016/02/29/Ambari-Hadoop-Offline/" data-id="cim98tea5001gw4sq78jlrcn1" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li></ul>
@@ -197,6 +197,15 @@ echo $variable
   
     
 <nav id="article-nav">
+  
+    <a href="/2016/03/26/CentOS-Ambari-1-Prepare/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CentOS7上Hadoop集群搭建与使用小记（一）——预备工作
+        
+      </div>
+    </a>
   
   
     <a href="/2016/02/14/Haskell-Fibonacci-sequence/" id="article-nav-older" class="article-nav-link-wrap">
@@ -227,7 +236,7 @@ echo $variable
   <div class="widget-wrap">
     <h3 class="widget-title">标签</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jupyter/">Jupyter</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
     </div>
   </div>
 
@@ -237,7 +246,7 @@ echo $variable
   <div class="widget-wrap">
     <h3 class="widget-title">标签云</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Ambari/" style="font-size: 10px;">Ambari</a> <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Hadoop/" style="font-size: 10px;">Hadoop</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a>
+      <a href="/tags/Ambari/" style="font-size: 13.33px;">Ambari</a> <a href="/tags/Bash/" style="font-size: 13.33px;">Bash</a> <a href="/tags/CentOS/" style="font-size: 16.67px;">CentOS</a> <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Hadoop/" style="font-size: 20px;">Hadoop</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a> <a href="/tags/Jupyter/" style="font-size: 10px;">Jupyter</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Shell/" style="font-size: 13.33px;">Shell</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a>
     </div>
   </div>
 
@@ -246,7 +255,7 @@ echo $variable
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">三月 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
     </div>
   </div>
 
@@ -259,11 +268,23 @@ echo $variable
       <ul>
         
           <li>
-            <a href="/2016/02/29/Ambari-Hadoop-Offline/">Ambari自动化离线批量部署Hadoop平台总结</a>
+            <a href="/2016/03/26/CentOS-Ambari-5-Spark/">CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用</a>
           </li>
         
           <li>
-            <a href="/2016/02/14/Haskell-Fibonacci-sequence/">Fibonacci sequence in Haskell</a>
+            <a href="/2016/03/26/CentOS-Ambari-4-Problem/">CentOS7上Hadoop集群搭建与使用小记（四）——难题集坑</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-3-Deploy/">CentOS7上Hadoop集群搭建与使用小记（三）——部署过程</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-2-Script/">CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-1-Prepare/">CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</a>
           </li>
         
       </ul>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用 | Journey Record</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Jupyter启动Jupyter(内核是pyspark)的方法(这个应该是local本机模式)：1PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&amp;#34;notebook&amp;#34; pyspark
+加上一些其他的配置：
+
+设置Python版本为Python3
+ip为0.0.0.0:7777（这样别的机器也可以通过7777访问）
+设">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用">
+<meta property="og:url" content="http://vanytang.github.io/2016/03/26/CentOS-Ambari-5-Spark/index.html">
+<meta property="og:site_name" content="Journey Record">
+<meta property="og:description" content="Jupyter启动Jupyter(内核是pyspark)的方法(这个应该是local本机模式)：1PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&amp;#34;notebook&amp;#34; pyspark
+加上一些其他的配置：
+
+设置Python版本为Python3
+ip为0.0.0.0:7777（这样别的机器也可以通过7777访问）
+设">
+<meta property="og:updated_time" content="2016-03-26T14:37:50.463Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用">
+<meta name="twitter:description" content="Jupyter启动Jupyter(内核是pyspark)的方法(这个应该是local本机模式)：1PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&amp;#34;notebook&amp;#34; pyspark
+加上一些其他的配置：
+
+设置Python版本为Python3
+ip为0.0.0.0:7777（这样别的机器也可以通过7777访问）
+设">
+  
+    <link rel="alternate" href="/atom.xml" title="Journey Record" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Journey Record</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">The stars, my destination.</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://vanytang.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CentOS-Ambari-5-Spark" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-5-Spark/" class="article-date">
+  <time datetime="2016-03-26T14:20:39.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="Jupyter"><a href="#Jupyter" class="headerlink" title="Jupyter"></a>Jupyter</h2><p>启动Jupyter(内核是pyspark)的方法(这个应该是local本机模式)：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&#34;notebook&#34; pyspark</span><br></pre></td></tr></table></figure></p>
+<p>加上一些其他的配置：</p>
+<ul>
+<li>设置Python版本为Python3</li>
+<li>ip为0.0.0.0:7777（这样别的机器也可以通过7777访问）</li>
+<li>设置为YARN-client模式(利用集群资源)</li>
+<li>executor个数为7，每个executor的CPU核心数为8</li>
+<li>PYTHONHASHSEED为0 (否则会出错)</li>
+</ul>
+<p>最后的我一般用的命令是：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/bash&#10;PYTHONHASHSEED=0 PYSPARK_PYTHON=python3 PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS=&#34;notebook --ip=0.0.0.0 --port=7777&#34; pyspark --master=yarn-client --num-executors=7 --executor-cores=8</span><br></pre></td></tr></table></figure></p>
+<p>在Jupyter中，建立一个Python3的notebook，等待Kernel启动完成，即可开始使用。</p>
+<p>另外，在notebook中，他是自动建立SparkContext变量sc的，可以直接使用。例如利用投针法计算Pi的近似值：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Spark Pi</span></span><br><span class="line"><span class="keyword">from</span> random <span class="keyword">import</span> random</span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">sample</span><span class="params">(_)</span>:</span></span><br><span class="line">    x, y = random(), random()</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span> <span class="keyword">if</span> x**<span class="number">2</span>+y**<span class="number">2</span>&lt;=<span class="number">1</span> <span class="keyword">else</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line">n_samples = <span class="number">10</span>**<span class="number">8</span></span><br><span class="line">print(sc.parallelize(range(n_samples)).map(sample).sum()*<span class="number">4.0</span>/n_samples)</span><br></pre></td></tr></table></figure></p>
+<hr>
+<h2 id="spark-submit提交任务"><a href="#spark-submit提交任务" class="headerlink" title="spark-submit提交任务"></a>spark-submit提交任务</h2><p>Jupyter-notebook可以用作我们平常交互式测试时使用，但是如果要运行一些任务，时间很长，想看看执行的进度，或者还有很多其他附属的文件需要一起执行，内存占用之类的还需要个性配置，那么用spark-submit命令提交任务最好。</p>
+<p>利用python运行main.py，提交任务，设置其依赖的文件a.py,b.py,c.py(因为每个executor是单独运行的，因此其依赖文件也要指定好，然后传输到各个executor上去)以及运行环境（YARN-Client, 7个Executor，每个8个CPU核心），写法如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PYSPARK_PYTHON=python3 spark-submit --master=yarn-client --num-executors=7 --executor-cores=8 --files a.py,b.py,c.py main.py</span><br></pre></td></tr></table></figure></p>
+<p>在这种情况下，我们的main.py中就要手动建立SparkContext也即sc变量了：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">from pyspark import SparkContext, SparkConf, StorageLevel&#10;&#10;conf = SparkConf()&#10;        .setMaster(&#34;yarn-client&#34;)&#10;        .setAppName(&#34;Spark-App&#34;)&#10;        .set(&#34;spark.storage.memoryFraction&#34;, &#34;0.9&#34;)&#10;sc = SparkContext(conf=conf, pyFiles=[&#39;a.py&#39;, &#39;b.py&#39;, &#39;c.py&#39;])</span><br></pre></td></tr></table></figure></p>
+<p>还可以传参数设置内存：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PYSPARK_PYTHON=python3 spark-submit --master=yarn-client --num-executors=7 --executor-cores=6 --driver-memory=2g --executor-memory=10g --files bikeUtil.py,weatherHoliday.py,stationFlow.py,predictor.py main.py</span><br></pre></td></tr></table></figure></p>
+<h3 id="SparkContext-SparkConf"><a href="#SparkContext-SparkConf" class="headerlink" title="SparkContext, SparkConf"></a>SparkContext, SparkConf</h3><p>在SparkConf, SparkContext这里，我们也可以通过传递参数pyFiles来设置依赖的文件，通过SparkConf的set函数来设置一些参数。<br>据说SparkContext.addFile(…)可以提交依赖的文件（还未测试）</p>
+<p>详情请见官方文档： <a href="https://spark.apache.org/docs/latest/configuration.html" target="_blank" rel="external">https://spark.apache.org/docs/latest/configuration.html</a></p>
+<hr>
+<h2 id="Parallelize"><a href="#Parallelize" class="headerlink" title="Parallelize"></a>Parallelize</h2><p>在利用Python编写并行化程序时该如何思考呢？先讲一些程序结构。</p>
+<p>实际上Spark的架构是分为Driver和Worker的，Driver负责执行总程序（额……意会意会），负责调用Spark的对象来并行化执行，从而Spark架构帮助我们将要执行的任务传输到各个worker上执行，最后再汇总回来。</p>
+<p>因此，其实我们用Python编写程序，不涉及到sc相关的变量时，其实我们就是在跑Python程序，调用sc产生的rdd的map，reduceByKey，collect时会调用相关的Spark架构去并行化执行。</p>
+<p>sc.parallelize是并行化的起点（当然还有其他函数，例如textFile)：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rdd = sc.parallelize(...)</span><br></pre></td></tr></table></figure></p>
+<p>创造一个rdd，rdd可以transformation，但并不会真正执行，只有在action执行时才会，即lazy-evaluation，具体这里就不展开了。</p>
+<p>关于他具体是如何并行化的呢？根据原理有两种方法，一种是基于Hash的Partitioner，一种是Ranger，HashPartitioner相当于一个Hash函数，将key转化到对应的Partition分区的编号。RangePartitioner的原理还有待探究。</p>
+<hr>
+<h2 id="数据的来源"><a href="#数据的来源" class="headerlink" title="数据的来源"></a>数据的来源</h2><p>我们可以用<code>sc.textFile(..)</code>来读取相关文本文件，默认是从HDFS读取的，不需要写前面的<code>hdfs://...</code>；</p>
+<p>另外，我们也可以通过本机读取，但文件名需要这样写：<code>file:///...</code>。但是本机读取需要注意的一点是，由于worker是分布式执行的，因此本机读取的文件需要放在各个分布式的机器上，推荐可以在Driver端读取完，然后broadcast到各个worker。</p>
+<hr>
+<h2 id="闭包与Broadcast"><a href="#闭包与Broadcast" class="headerlink" title="闭包与Broadcast"></a>闭包与Broadcast</h2><p>一般在__main__里面声明的变量，会自动打包并传送到worker中，在worker的代码中会访问的到。但是如果是在函数中建立的，需要用global实现。</p>
+<p>但是如果可以的话最好用broadcast将变量广播出去，这样就不用每次task把信息重新传输一遍了。</p>
+<p>共享变量broadcast <a href="http://blog.csdn.net/slvher/article/details/46439019" target="_blank" rel="external">^SparkBroadcast</a></p>
+<blockquote>
+<p>Q: 如何在传给spark transformations操作的函数中访问共享变量？<br>A: 根据官网Programming Guide文档说明（参见这里），当作为参数传给spark操作（如map或reduce）的函数在远程机器的节点上执行时，函数中使用到的每个变量的副本（separate copies）也会被拷贝到这些节点上以便函数访问，如果这些变量在节点上被修改，那这些修改不会被反传回spark driver program，即在实现业务代码时，应由实现者保证这些变量的只读特性。因为在不同任务间维护通用的、支持读/写的共享变量会降低spark效率。<br>举个例子，下面的代码说明了如何在传给spark操作的函数中借助全局变量实现共享访问：</p>
+<p>Q: 除通过global variable共享变量外，spark还支持什么方式共享变量？<br>A: Spark还支持broadcast变量和accumulators这两种共享变量的方式。其中，broadcast允许开发者在spark集群的每个节点上保持变量的一份只读cache，本质上，broadcast变量也是global变量，只不过它是由开发者显式分发到集群节点上的，而非spark根据每个task调用的函数对变量的访问情况自动拷贝。至于accumulators，顾名思义，它只支持add操作，具体语法可参考spark programming guide关于accumulators部分的说明。</p>
+<p>Q: broadcast变量与普通global变量有何关系？各自的适用场合？<br>A: 实际上，broadcast变量是一种global变量，它们均可以实现在分布式节点中执行函数时共享变量。其中，普通global变量是随着spark对task的调度根据实际情况由spark调度器负责拷贝至集群节点的，这意味着若有需访问某global变量的多个task执行时，每个task的执行均有变量拷贝过程；而broadcast变量则是由开发者主动拷贝至集群节点且会一直cache直至用户主动调用unpersist或整个spark作业结束。<br>PS: 实际上，即使调用unpersist也不会立即释放资源，它只是告诉spark调度器资源可以释放，至于何时真正释放由spark调度器决定，参见SPARK-4030。<br>结论：若共享变量只会被某个task使用1次，则使用普通global变量共享方式即可；若共享变量会被先后执行的多个tasks访问，则broadcast方式会节省拷贝开销。<br>再次提醒：若使用了broadcast方式共享变量，则开发者应在确定该变量不再需要共享时主动调用unpersist来释放集群资源。</p>
+</blockquote>
+<p>Broadcast的机理详见：<a href="https://github.com/JerryLead/SparkInternals/blob/master/markdown/7-Broadcast.md" target="_blank" rel="external">https://github.com/JerryLead/SparkInternals/blob/master/markdown/7-Broadcast.md</a></p>
+<hr>
+<h2 id="编码范式的改变"><a href="#编码范式的改变" class="headerlink" title="编码范式的改变"></a>编码范式的改变</h2><ol>
+<li>采用函数式编程方式，数据只有不断的转化（transform），不可更改；当我们要某些值时，使用action获取它。</li>
+<li>尽可能并行化，不要产生过大的全局变量（即闭包传过去东西不要太多）</li>
+<li>注意！只能在driver进行并行化, worker不行</li>
+<li>不要传输（过大）的对象（即这些序列中的元素不要是对象）</li>
+</ol>
+<hr>
+<h2 id="Multiple-SparkContext"><a href="#Multiple-SparkContext" class="headerlink" title="Multiple SparkContext"></a>Multiple SparkContext</h2><p>一台机器只能启动一个Spark?否则会Address冲突，如何解决多人同时使用的问题？<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">16/03/21 06:38:23 WARN AbstractLifeCycle: FAILED SelectChannelConnector@0.0.0.0:4040: java.net.BindException: Address already in use</span><br></pre></td></tr></table></figure></p>
+<p>貌似可以重新注册一个ip，可以同时跑，关键是内存不够……</p>
+<hr>
+<h2 id="Lost-Executor-内存不够"><a href="#Lost-Executor-内存不够" class="headerlink" title="Lost Executor (内存不够)"></a>Lost Executor (内存不够)</h2><p>如果Executor注册上了，但是执行时，又断掉了(<code>ERROR YarnScheduler: Lost executor xxx</code>)，那很可能是由于内存不够的原因。</p>
+<p>在执行的时候设置driver-memory, executor-memory， 试着调整Spark配置中spark.yarn.driver.memoryOverhead, executor.memoryOverhead的大小<a href="http://apache-spark-user-list.1001560.n3.nabble.com/Executor-Lost-Failure-td18486.html" target="_blank" rel="external">^SparkMemory1</a> <a href="http://stackoverflow.com/questions/33074288/getting-error-in-spark-executor-lost" target="_blank" rel="external">^SparkMemory3</a>，memoryOverhead一般用处不太大。</p>
+<p>下面是摘自网上性能调优Blog的一段话 <a href="http://www.csdn.net/article/2015-07-08/2825160" target="_blank" rel="external">^SparkPerformanceTurning</a>：</p>
+<blockquote>
+<p>在YARN模式下：</p>
+<ol>
+<li><p>集群task并行度：SPARK_ EXECUTOR_INSTANCES* SPARK_EXECUTOR_CORES；</p>
+</li>
+<li><p>集群内存总量：(executor个数) * (SPARK_EXECUTOR_MEMORY+ spark.yarn.executor.memoryOverhead)+(SPARK_DRIVER_MEMORY+spark.yarn.driver.memoryOverhead)。</p>
+</li>
+</ol>
+<p>重点强调：Spark对Executor和Driver额外添加堆内存大小，Executor端：由spark.yarn.executor.memoryOverhead设置，默认值executorMemory <em> 0.07与384的最大值。Driver端：由spark.yarn.driver.memoryOverhead设置，默认值driverMemory </em> 0.07与384的最大值。</p>
+<p>通过调整上述参数，可以提高集群并行度，让系统同时执行的任务更多，那么对于相同的任务，并行度高了，可以减少轮询次数。举例说明：如果一个stage有100task，并行度为50，那么执行完这次任务，需要轮询两次才能完成，如果并行度为100，那么一次就可以了。</p>
+<p>但是在资源相同的情况，并行度高了，相应的Executor内存就会减少，所以需要根据实际实况协调内存和core。此外，Spark能够非常有效的支持短时间任务（例如：200ms），因为会对所有的任务复用JVM，这样能减小任务启动的消耗，Standalone模式下，core可以允许1-2倍于物理core的数量进行超配。</p>
+</blockquote>
+<ul>
+<li>executor_memory是整个executor的内存（包括多个core）, core多了，那么需要的内存就多，如果超过executor的内存，就会崩；因此内存和CPU的利用是一个tradeoff</li>
+<li>可以用<code>rdd.cache()</code>然后看一下内存变化，就知道这次数据集所占的空间了。</li>
+<li>尽量不要让对象拷贝，即使你认为是引用，也有可能是拷贝（占多份内存），可以改成先collect再broadcast的方式</li>
+</ul>
+<p>性能调优详见：<a href="http://www.raychase.net/3546" target="_blank" rel="external">http://www.raychase.net/3546</a></p>
+<p>另外，有一个参数最好需要设置一下，默认是0.6，表示我们给executor设置的memory中只有60%的资源是分配给运行时的内存，其余的分配给RDD.cache()时的空间。一般如果cache不是很大的话，那么放宽这个比例可以赢得更大的内存，以运行更多的cores：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conf = SparkConf().set(&#34;spark.storage.memoryFraction&#34;, &#34;0.9&#34;)</span><br></pre></td></tr></table></figure></p>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/319633" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/319633</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-5-Spark/" data-id="cim98te8u000iw4sqeg6ao7b1" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Jupyter/">Jupyter</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2016/03/26/CentOS-Ambari-4-Problem/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CentOS7上Hadoop集群搭建与使用小记（四）——难题集坑</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Functional-Programming/">Functional Programming</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Functional-Programming/Haskell/">Haskell</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/">Hadoop</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/Ambari/">Ambari</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jupyter/">Jupyter</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Ambari/" style="font-size: 13.33px;">Ambari</a> <a href="/tags/Bash/" style="font-size: 13.33px;">Bash</a> <a href="/tags/CentOS/" style="font-size: 16.67px;">CentOS</a> <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Hadoop/" style="font-size: 20px;">Hadoop</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a> <a href="/tags/Jupyter/" style="font-size: 10px;">Jupyter</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Shell/" style="font-size: 13.33px;">Shell</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">三月 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-5-Spark/">CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-4-Problem/">CentOS7上Hadoop集群搭建与使用小记（四）——难题集坑</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-3-Deploy/">CentOS7上Hadoop集群搭建与使用小记（三）——部署过程</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-2-Script/">CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-1-Prepare/">CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 VanyTang<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+</body>
+</html>

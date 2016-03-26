@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍 | Journey Record</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="这一部分主要介绍的是思想以及原理，如果要具体操作步骤，可以直接跳过看下一部分（三）.
+基本思想抽象看来，集群的部署操作基本只有两种类型操作：
+
+在Server上执行脚本，对每个机器产生作用，例如集体分发一些文件这种，我称之为apply
+Server端调用Client，相当于每个Client执行脚本，例如在Client上安装软件这类的，这种操作我称之为Remote-Run.
+
+基本脚本根据基本思想小">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍">
+<meta property="og:url" content="http://vanytang.github.io/2016/03/26/CentOS-Ambari-2-Script/index.html">
+<meta property="og:site_name" content="Journey Record">
+<meta property="og:description" content="这一部分主要介绍的是思想以及原理，如果要具体操作步骤，可以直接跳过看下一部分（三）.
+基本思想抽象看来，集群的部署操作基本只有两种类型操作：
+
+在Server上执行脚本，对每个机器产生作用，例如集体分发一些文件这种，我称之为apply
+Server端调用Client，相当于每个Client执行脚本，例如在Client上安装软件这类的，这种操作我称之为Remote-Run.
+
+基本脚本根据基本思想小">
+<meta property="og:updated_time" content="2016-03-26T14:35:57.663Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍">
+<meta name="twitter:description" content="这一部分主要介绍的是思想以及原理，如果要具体操作步骤，可以直接跳过看下一部分（三）.
+基本思想抽象看来，集群的部署操作基本只有两种类型操作：
+
+在Server上执行脚本，对每个机器产生作用，例如集体分发一些文件这种，我称之为apply
+Server端调用Client，相当于每个Client执行脚本，例如在Client上安装软件这类的，这种操作我称之为Remote-Run.
+
+基本脚本根据基本思想小">
+  
+    <link rel="alternate" href="/atom.xml" title="Journey Record" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Journey Record</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">The stars, my destination.</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://vanytang.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-CentOS-Ambari-2-Script" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/03/26/CentOS-Ambari-2-Script/" class="article-date">
+  <time datetime="2016-03-26T14:16:59.000Z" itemprop="datePublished">2016-03-26</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Hadoop/">Hadoop</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这一部分主要介绍的是思想以及原理，如果要具体操作步骤，可以直接跳过看下一部分（三）.</p>
+<h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>抽象看来，集群的部署操作基本只有两种类型操作：</p>
+<ul>
+<li>在Server上执行脚本，对每个机器产生作用，例如集体分发一些文件这种，我称之为apply</li>
+<li>Server端调用Client，相当于每个Client执行脚本，例如在Client上安装软件这类的，这种操作我称之为Remote-Run.</li>
+</ul>
+<h2 id="基本脚本"><a href="#基本脚本" class="headerlink" title="基本脚本"></a>基本脚本</h2><p>根据基本思想小节中提到的两种操作，我用两个脚本来抽象这两种操作，一个是applyall.sh，一个是remoterunall.sh。</p>
+<h3 id="传送文件tf-transfer-file"><a href="#传送文件tf-transfer-file" class="headerlink" title="传送文件tf (transfer file)"></a>传送文件tf (transfer file)</h3><p>在正式介绍applyall和remoterunall之前，我先介绍一个基本功能，tf，即传送文件的功能。传送文件在部署过程中是非常常见的一个需求，因此我们将其抽象出来作为一个单独的“命令”。</p>
+<p>因为传送文件的前提是目标目录存在，因此每次传送文件前需要先<code>mkdir xxx</code>一下以确保文件夹存在，再传送文件。</p>
+<p>但在传送过程中很有可能需要密码或者输入<code>yes</code>以保存对方的fingerprint，因此这里采用了expect程序来做交互式处理，如果没有的话需要安装一下：<code>yum install expect</code>。</p>
+<p>具体实现的代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/expect&#10;&#10;set source   [lindex $argv 0]&#10;set dest     [lindex $argv 1]&#10;set destfile [lindex $argv 2]&#10;set serverip [lindex $argv 3]&#10;set pwd      [lindex $argv 4]&#10;&#10;spawn ssh root@$serverip &#34;mkdir $dest&#34;&#10;expect &#123;&#10;&#34;*continue connecting*&#34; &#123; send &#34;yes\r&#34;; exp_continue &#125;&#10;&#34;*password*&#34; &#123; send &#34;$pwd\r&#34;; exp_continue &#125;&#10;&#34;#&#34; &#123; send &#34;\r&#34; &#125;&#10;&#125;&#10;&#10;spawn scp -r $source root@$serverip:$dest$destfile&#10;expect &#123;&#10;&#34;*continue connecting*&#34; &#123; send &#34;yes\r&#34;; exp_continue &#125;&#10;&#34;*password*&#34; &#123; send &#34;$pwd\r&#34;; exp_continue &#125;&#10;&#34;#&#34; &#123; send &#34;\r&#34; &#125;&#10;&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Apply-All"><a href="#Apply-All" class="headerlink" title="Apply-All"></a>Apply-All</h3><p>先来说说applyall.sh. 调用脚本，传入hostlist（格式同hosts文件），以及要执行的bashfile，就会帮你依次执行，例如我想将本地的hosts文件传送到各个其他机器，则用法如下:<br><code>./applyall.sh hostlist deployhosts.sh mypassword</code><br>其中hostlist是预先定好的hosts列表（见上一个文章文末），deployhosts.sh内容如下（该脚本必须按照ip，name，pwd的顺序来取对应的参数）：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span></span><br><span class="line">hostip=<span class="variable">$1</span></span><br><span class="line">hostname=<span class="variable">$2</span></span><br><span class="line"><span class="built_in">pwd</span>=<span class="variable">$3</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===Sending hosts to client <span class="variable">$1</span>, <span class="variable">$2</span>..."</span></span><br><span class="line">./tf hosts /etc/ hosts <span class="variable">$hostip</span> <span class="variable">$pwd</span></span><br></pre></td></tr></table></figure></p>
+<p>这里的tf即上文提到的传送文件的tf。</p>
+<p>applyall.sh的脚本如下所示，如果参数中没有传送pwd参数，那么会询问用户手动输入。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span><br><span class="line"></span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">2</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error call format"</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Format: ./applyall.sh hostlist bashfile [pwd]"</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">hostlist=<span class="variable">$1</span></span><br><span class="line">bashfile=<span class="variable">$2</span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">3</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">read</span> -p <span class="string">"Enter the client password:"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">        <span class="built_in">pwd</span>=<span class="variable">$3</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> ===Enter Apply-All  hostlist: <span class="variable">$hostlist</span>, bashfile: <span class="variable">$bashfile</span></span><br><span class="line"></span><br><span class="line">cat <span class="variable">$hostlist</span> | <span class="keyword">while</span> <span class="built_in">read</span> hostInfo</span><br><span class="line"><span class="keyword">do</span> </span><br><span class="line">        hostip=`<span class="built_in">echo</span> <span class="variable">$hostInfo</span> | cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>1`</span><br><span class="line">        hostname=`<span class="built_in">echo</span> <span class="variable">$hostInfo</span> | cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>2`</span><br><span class="line">        <span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===Applying Client <span class="variable">$hostip</span> <span class="variable">$hostname</span>..."</span></span><br><span class="line">        bash <span class="variable">$bashfile</span> <span class="variable">$hostip</span> <span class="variable">$hostname</span> <span class="variable">$pwd</span></span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===Leave Apply-All."</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="Remote-Run-All"><a href="#Remote-Run-All" class="headerlink" title="Remote-Run-All"></a>Remote-Run-All</h3><p>remoterunall.sh，顾名思义，就是远程执行脚本的意思。假设我想每台机器更新python，那么我只要写一个小脚本updatepython2.sh在同一个目录下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum update python -y</span><br></pre></td></tr></table></figure></p>
+<p>然后运行<code>remoterunall.sh hostlist updatepython2.sh</code>即可。</p>
+<p>remoterunall.sh的实现如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#!/usr/bin/bash&#10;&#10;if [ $# -lt 2 ]; then&#10;        echo &#34;Error call format&#34;&#10;        echo &#34;Format: ./remoterunall.sh hostlist bashfile&#34;&#10;        exit&#10;fi&#10;&#10;hostlist=$1&#10;bashfile=$2&#10;&#10;echo&#10;echo ===Enter Remote-RunAll  hostlist: $hostlist, bashfile: $bashfile&#10;&#10;cat $hostlist | while read hostInfo&#10;do&#10;        hostip=`echo $hostInfo | cut -d &#34; &#34; -f1`&#10;        hostname=`echo $hostInfo | cut -d &#34; &#34; -f2`&#10;&#10;        echo -e &#34;\n===Run script in client $hostip $hostname...&#34;&#10;        ssh root@$hostip &#39;bash -s&#39; &#60; $bashfile&#10;done&#10;&#10;echo -e &#34;\n===Leave Remote-RunAll.&#34;</span><br></pre></td></tr></table></figure></p>
+<p>这里假设执行remoterunall.sh的时候，所有机器之间的ssh-key已经配置好了，可以无密码访问，因此这里并没有需要密码。</p>
+<h2 id="部署脚本"><a href="#部署脚本" class="headerlink" title="部署脚本"></a>部署脚本</h2><p>接下来的脚本基本是建立在上面的“基本脚本”的基础上的，这里只介绍三个主要脚本：</p>
+<ol>
+<li>init.sh 负责初始化一个集群</li>
+<li>configmaster.sh 负责配置master节点 （主要是配置Ambari相关）</li>
+<li>addnewhost.sh 负责当集群汇总新加入一个节点时，配置新机器以及重新分发hosts等文件</li>
+</ol>
+<h3 id="init-sh"><a href="#init-sh" class="headerlink" title="init.sh"></a>init.sh</h3><p>使用方法： ./init.sh hostlist<br>其中hostlist是一个以hosts格式存着主机名和ip的文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span><br><span class="line"></span></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">1</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: parameter is not enough..."</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Format: ./init.sh hostlist"</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line">hostlist=<span class="variable">$1</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter the client password(all should be same):"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># generate sever ssh-key</span></span><br><span class="line">filepath=~/.ssh/id_rsa</span><br><span class="line"><span class="keyword">if</span> [ <span class="operator">-f</span> <span class="variable">$filepath</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"ssh-key already exists. it won't be generated again."</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"if you want to generate new key, please remove the key file first."</span></span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">        <span class="built_in">echo</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"===ssh key generating..."</span></span><br><span class="line">        ssh-keygen <span class="operator">-f</span> ~/.ssh/id_rsa -P <span class="string">""</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> </span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Clearing public key gathering folder..."</span></span><br><span class="line">rm <span class="operator">-f</span> ~/.ssh/pub/*</span><br><span class="line"><span class="built_in">echo</span> </span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Copy this public key to that folder..."</span></span><br><span class="line">cp  ~/.ssh/id_rsa.pub ~/.ssh/pub/id_rsa.pub</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Generating hosts file...."</span></span><br><span class="line">cat ./others/hosts_template <span class="variable">$hostlist</span> &gt; hosts</span><br><span class="line"></span><br><span class="line"><span class="comment"># Deploying Clients...</span></span><br><span class="line">./applyall.sh <span class="variable">$hostlist</span> others/deployclient.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Gathering pub keys..."</span></span><br><span class="line">cat ~/.ssh/pub/*.pub &gt; authorized_keys</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Deploying pub keys..."</span></span><br><span class="line">./applyall.sh <span class="variable">$hostlist</span> others/deploypubkeys.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Cleaning..."</span></span><br><span class="line">rm <span class="operator">-f</span> hosts</span><br><span class="line">rm <span class="operator">-f</span> authorized_keys</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Clean finished."</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Reboot all the machine..."</span></span><br><span class="line">cat <span class="variable">$hostlist</span> | <span class="keyword">while</span> <span class="built_in">read</span> hostinfo</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">        hostip=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>1`</span><br><span class="line">        hostname=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>2`</span><br><span class="line">        ssh root@<span class="variable">$hostip</span> <span class="string">'reboot'</span> &lt; /dev/null</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reboot finished."</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="configmaster-sh"><a href="#configmaster-sh" class="headerlink" title="configmaster.sh"></a>configmaster.sh</h3><p>这里调用configmaster.sh，然后输入主机ip及其密码，即可自动配置ambari的repo地址，并且安装ambari，拷贝现有的jdk到master节点上(Amabri配置时使用)。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter your master ip:"</span> masterip</span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter your password:"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$masterip</span>, <span class="variable">$pwd</span></span><br><span class="line">./tf others/ambari.repo /etc/yum.repos.d/ ambari.repo <span class="variable">$masterip</span> <span class="variable">$pwd</span></span><br><span class="line">ssh root@<span class="variable">$masterip</span> <span class="string">'bash -s'</span> &lt; others/installmaster.sh</span><br><span class="line">./tf ../jdk/jdk-<span class="number">8</span>u60-linux-x64.tar.gz /var/lib/ambari-server/resources/ jdk-<span class="number">8</span>u60-linux-x64.tar.gz <span class="variable">$masterip</span> <span class="variable">$jdk</span></span><br><span class="line">./tf ../jdk/jce_policy-<span class="number">8</span>.zip /var/lib/ambari-server/resources/ jce_policy-<span class="number">8</span>.zip <span class="variable">$masterip</span> <span class="variable">$jdk</span></span><br></pre></td></tr></table></figure></p>
+<p>这调用了installmaster.sh，其实就是执行了三句话（即安装ambari）：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">yum clean all</span><br><span class="line">yum repolist</span><br><span class="line">yum install ambari-server -y</span><br></pre></td></tr></table></figure></p>
+<p>注意调用完该脚本仅仅是安装好了Ambari，接下来还需要到master节点上运行以下命令以配置、启动Amabri：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ambari-server setup</span><br><span class="line">ambari-server start</span><br></pre></td></tr></table></figure></p>
+<h3 id="addnewhost-sh"><a href="#addnewhost-sh" class="headerlink" title="addnewhost.sh"></a>addnewhost.sh</h3><p>这个用法和init.sh类似，但是要注意传入一个新的hostlist，一个旧的hostlist。注意：程序并不会自动合并两个hostlist（为了避免任务失败，还需要重新建立hostist）。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="shebang">#!/usr/bin/bash</span></span><br><span class="line">newhostlist=<span class="variable">$1</span></span><br><span class="line">orighostlist=<span class="variable">$2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> [ <span class="variable">$#</span> <span class="operator">-lt</span> <span class="number">2</span> ]; <span class="keyword">then</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Error: parameter is not enough..."</span></span><br><span class="line">        <span class="built_in">echo</span> <span class="string">"Format: ./addnew.sh newhostlist orignhostlist"</span></span><br><span class="line">        <span class="built_in">exit</span></span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Enter addnew scirpt: <span class="variable">$newhostlist</span> <span class="variable">$orighostlist</span>"</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">read</span> -p <span class="string">"Enter the client password(all should be same):"</span> <span class="operator">-s</span> <span class="built_in">pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Generating new hosts file...."</span></span><br><span class="line">updatedhostlist=<span class="string">"updatedhostlist"</span></span><br><span class="line">cat <span class="variable">$orighostlist</span> &gt; <span class="variable">$updatedhostlist</span></span><br><span class="line">cat <span class="variable">$newhostlist</span> &gt;&gt; <span class="variable">$updatedhostlist</span></span><br><span class="line">cat ./others/hosts_template <span class="variable">$updatedhostlist</span> &gt; hosts</span><br><span class="line"></span><br><span class="line"><span class="comment"># Deploying new clients...</span></span><br><span class="line">./applyall.sh <span class="variable">$newhostlist</span> others/deployclient.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> </span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reDeploying hosts file..."</span></span><br><span class="line">./applyall.sh <span class="variable">$updatedhostlist</span> others/deployhosts.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===gathering pub keys..."</span></span><br><span class="line">cat ~/.ssh/pub/*.pub &gt; authorized_keys</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"\n===reDeploying pub keys for all clients..."</span></span><br><span class="line">./applyall.sh <span class="variable">$updatedhostlist</span> others/deploypubkeys.sh <span class="variable">$pwd</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Cleaning..."</span></span><br><span class="line">rm <span class="operator">-f</span> hosts</span><br><span class="line">rm <span class="operator">-f</span> <span class="variable">$updatedhostlist</span></span><br><span class="line">rm <span class="operator">-f</span> authorized_keys</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===Clean finished."</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reboot all the new machine..."</span></span><br><span class="line">cat <span class="variable">$newhostlist</span> | <span class="keyword">while</span> <span class="built_in">read</span> hostinfo</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">        hostip=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>1`</span><br><span class="line">        hostname=`<span class="built_in">echo</span> <span class="variable">$hostinfo</span>|cut <span class="operator">-d</span> <span class="string">" "</span> <span class="operator">-f</span>2`</span><br><span class="line">        ssh root@<span class="variable">$hostip</span> <span class="string">'reboot'</span> &lt; /dev/null</span><br><span class="line"><span class="keyword">done</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"===reboot finished."</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">"Leave addnew scirpt."</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h2><p>其他的一些部署过程用到的脚本这里就不一一放上来了，整个脚本目录如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@yumsource script]# tree&#10;.&#10;&#9500;&#9472;&#9472; addnewhost.sh&#10;&#9500;&#9472;&#9472; applyall.sh&#10;&#9500;&#9472;&#9472; configmaster.sh&#10;&#9500;&#9472;&#9472; hostlist&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; hostlist_new&#10;&#9500;&#9472;&#9472; init.sh&#10;&#9500;&#9472;&#9472; others&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; ambari.repo&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; configclient_template.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; deployclient.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; deploypubkeys.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; deploypythons.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; disSELinuxCfg&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; hosts_template&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; installmaster.sh&#10;&#9474;&#160;&#160; &#9500;&#9472;&#9472; installpython34.sh&#10;&#9474;&#160;&#160; &#9492;&#9472;&#9472; updatepython2.sh&#10;&#9500;&#9472;&#9472; remoterunall.sh&#10;&#9492;&#9472;&#9472; tf</span><br></pre></td></tr></table></figure>
+<hr>
+<p>源地址：<a href="https://www.zybuluo.com/Vany/note/318071" target="_blank" rel="external">https://www.zybuluo.com/Vany/note/318071</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://vanytang.github.io/2016/03/26/CentOS-Ambari-2-Script/" data-id="cim98te9g0013w4sqpid9axdq" class="article-share-link">Share</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Bash/">Bash</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/">Linux</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Shell/">Shell</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/03/26/CentOS-Ambari-3-Deploy/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          CentOS7上Hadoop集群搭建与使用小记（三）——部署过程
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2016/03/26/CentOS-Ambari-1-Prepare/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Functional-Programming/">Functional Programming</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Functional-Programming/Haskell/">Haskell</a></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/">Hadoop</a><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Hadoop/Ambari/">Ambari</a></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ambari/">Ambari</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Bash/">Bash</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CentOS/">CentOS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Fibonacci/">Fibonacci</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Haskell/">Haskell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Jupyter/">Jupyter</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Shell/">Shell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Spark/">Spark</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Ambari/" style="font-size: 13.33px;">Ambari</a> <a href="/tags/Bash/" style="font-size: 13.33px;">Bash</a> <a href="/tags/CentOS/" style="font-size: 16.67px;">CentOS</a> <a href="/tags/Fibonacci/" style="font-size: 10px;">Fibonacci</a> <a href="/tags/Hadoop/" style="font-size: 20px;">Hadoop</a> <a href="/tags/Haskell/" style="font-size: 10px;">Haskell</a> <a href="/tags/Jupyter/" style="font-size: 10px;">Jupyter</a> <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Shell/" style="font-size: 13.33px;">Shell</a> <a href="/tags/Spark/" style="font-size: 10px;">Spark</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">三月 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/02/">二月 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-5-Spark/">CentOS7上Hadoop集群搭建与使用小记（五）——Spark的基本使用</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-4-Problem/">CentOS7上Hadoop集群搭建与使用小记（四）——难题集坑</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-3-Deploy/">CentOS7上Hadoop集群搭建与使用小记（三）——部署过程</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-2-Script/">CentOS7上Hadoop集群搭建与使用小记（二）——脚本介绍</a>
+          </li>
+        
+          <li>
+            <a href="/2016/03/26/CentOS-Ambari-1-Prepare/">CentOS7上Hadoop集群搭建与使用小记（一）——预备工作</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 VanyTang<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css" type="text/css">
+  <script src="/fancybox/jquery.fancybox.pack.js" type="text/javascript"></script>
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+  </div>
+</body>
+</html>
